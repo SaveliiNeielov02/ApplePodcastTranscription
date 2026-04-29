@@ -1,4 +1,5 @@
 <Solution>
   <Project Path="ApplePodcastTranscription/ApplePodcastTranscription.Client/ApplePodcastTranscription.Client.csproj" />
   <Project Path="ApplePodcastTranscription/ApplePodcastTranscription/ApplePodcastTranscription.csproj" />
+  <Project Path="ApplePodcastTranscriptionTest/ApplePodcastTranscriptionTest.csproj" Id="a802fc9b-9d6f-43df-857e-045df461d925" />
 </Solution>
