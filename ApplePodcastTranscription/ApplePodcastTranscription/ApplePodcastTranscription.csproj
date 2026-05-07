@@ -11,11 +11,17 @@
   <ItemGroup>
     <ProjectReference Include="..\ApplePodcastTranscription.Client\ApplePodcastTranscription.Client.csproj" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="10.0.6" />
+    <PackageReference Include="NAudio" Version="2.3.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <PackageReference Include="Whisper.net" Version="1.9.0" />
+    <PackageReference Include="Whisper.net.Runtime" Version="1.9.0" />
+    <PackageReference Include="Whisper.net.Runtime.Cuda" Version="1.9.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="DownloadedPodcasts\" />
+    <None Update="Resources\STTModels\WhisperSmall\ggml-small.bin">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

@@ -2,6 +2,7 @@
 using Castle.Core.Logging;
 using Microsoft.Extensions.Configuration;
 using Moq;
+using System.Collections.ObjectModel;
 using System.Text;
 
 namespace ApplePodcastTranscriptionTest
@@ -9,10 +10,11 @@ namespace ApplePodcastTranscriptionTest
     public class ApplePodcastDownloadingTest
     {
         [Fact]
-        public async Task DownloadPodcastEpisodeAsync_ShouldReturnFilePath()
+        public async Task DownloadPodcastEpisodeAsync_ShouldReturnAudioContent()
         {
             // Arrange
             var podcastId = "1000764234023";
+            bool saveLocally = true;
 
             // Mock the HttpClientFactory
             var httpClientFactory = new Mock<IHttpClientFactory>();
@@ -31,11 +33,10 @@ namespace ApplePodcastTranscriptionTest
                configuration);
 
             // Act
-            await applePodcastDownloader.DownloadPodcastEpisodeAsync(podcastId);
+            var result = await applePodcastDownloader.DownloadPodcastEpisodeAsync(podcastId, saveLocally);
 
             // Assert
-            var expectedFilePath = Path.Combine(Constants.PathToDownloadedPodcasts, $"{podcastId}.mp3");
-            Assert.True(File.Exists(expectedFilePath));
+            Assert.IsType<ReadOnlyCollection<byte>>(result);
         }
     }
 }
