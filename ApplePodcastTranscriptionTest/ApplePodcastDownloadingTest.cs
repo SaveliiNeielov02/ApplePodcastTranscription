@@ -1,5 +1,6 @@
 ﻿using ApplePodcastTranscription.Models;
 using Castle.Core.Logging;
+using Microsoft.AspNetCore.Rewrite;
 using Microsoft.Extensions.Configuration;
 using Moq;
 using System.Collections.ObjectModel;
@@ -36,7 +37,7 @@ namespace ApplePodcastTranscriptionTest
             var result = await applePodcastDownloader.DownloadPodcastEpisodeAsync(podcastId, saveLocally);
 
             // Assert
-            Assert.IsType<ReadOnlyCollection<byte>>(result);
+            Assert.True(result != null && result.Length > 0);
         }
     }
 }
