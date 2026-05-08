@@ -4,7 +4,7 @@ using NAudio.Wave.SampleProviders;
 
 namespace ApplePodcastTranscription.Services.Abstract
 {
-    public abstract class WhisperAudioResampler : IAudioResampler
+    public abstract class WhisperSmallAudioResampler : IAudioResampler
     {
         // Need to be specified by concrete implementations, as the method of reading audio bytes can vary based on the format (e.g., WAV, MP3, etc.)
         public abstract float[] ResampleBytes(byte[] audioContent);

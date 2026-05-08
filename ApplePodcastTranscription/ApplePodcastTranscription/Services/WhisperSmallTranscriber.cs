@@ -11,16 +11,16 @@ using Whisper.net.Logger;
 
 namespace ApplePodcastTranscription.Services
 {
-    public class WhisperTranscriber : IAsyncTranscriber, IDisposable
+    public class WhisperSmallTranscriber : IAsyncTranscriber, IDisposable
     {
         private WhisperFactory _factory;
         private WhisperProcessor _processor;
-        private readonly WhisperAudioResampler _audioResampler;
+        private readonly WhisperSmallAudioResampler _audioResampler;
         private readonly ILogger _logger;
 
         private readonly string _modelPath = Path.Combine("Resources", "STTModels", "WhisperSmall", "ggml-small.bin");
 
-        public WhisperTranscriber(ILogger logger, WhisperAudioResampler audioResampler) 
+        public WhisperSmallTranscriber(ILogger logger, WhisperSmallAudioResampler audioResampler) 
         {
             if (!File.Exists(_modelPath)) 
             {

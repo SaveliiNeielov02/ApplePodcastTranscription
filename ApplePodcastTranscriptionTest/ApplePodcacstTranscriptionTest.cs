@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using ApplePodcastTranscription.Services.Database;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
 using System;
@@ -14,10 +15,10 @@ namespace ApplePodcastTranscriptionTest
         public async Task TranscriptPodcastEpisode_ShouldReturnText()
         {
             // Arrange
-            var loggerMock = new Mock<ILogger<ApplePodcastTranscription.Services.WhisperTranscriber>>();
-            var audioResampler = new ApplePodcastTranscription.Services.WhisperWaveAudioResampler();
+            var loggerMock = new Mock<ILogger<ApplePodcastTranscription.Services.WhisperSmallTranscriber>>();
+            var audioResampler = new ApplePodcastTranscription.Services.WhisperSmallWaveAudioResampler();
 
-            var transcriber = new ApplePodcastTranscription.Services.WhisperTranscriber(loggerMock.Object, audioResampler);
+            var transcriber = new ApplePodcastTranscription.Services.WhisperSmallTranscriber(loggerMock.Object, audioResampler);
             var audioFilePath = Path.Combine("DownloadedPodcasts", "1000764234023.wave");
 
             // Act

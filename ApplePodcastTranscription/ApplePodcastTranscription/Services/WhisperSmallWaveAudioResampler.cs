@@ -5,7 +5,7 @@ using NAudio.Wave.SampleProviders;
 
 namespace ApplePodcastTranscription.Services
 {
-    public class WhisperWaveAudioResampler : WhisperAudioResampler
+    public class WhisperSmallWaveAudioResampler : WhisperSmallAudioResampler
     {
         public override float[] ResampleBytes(byte[] audioContent) 
         {
