@@ -26,13 +26,12 @@ namespace ApplePodcastTranscriptionTest
             var testPodcastExternalId = "test_podcast_external_id";
 
             var repository = serviceProvider.GetRequiredService<IPodcastRecordRepository>();
-            var dbContext = serviceProvider.GetRequiredService<ApplePodcastDbContext>();
 
             // Act
             await repository.AddPodcastRecordAsync(testPodcastExternalId);
 
             // Assert
-            var podcastRecord = await dbContext.PodcastsRecords.FirstOrDefaultAsync(p => p.ExternalId == testPodcastExternalId);
+            var podcastRecord = await repository.GetPodcastRecordAsync(testPodcastExternalId);
             Assert.NotNull(podcastRecord);
         }
     }

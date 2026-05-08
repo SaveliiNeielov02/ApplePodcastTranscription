@@ -6,7 +6,7 @@ namespace ApplePodcastTranscription.Interfaces
     public interface IPodcastRecordRepository
     {
         public Task AddPodcastRecordAsync(string externalId);
-        public Task<PodcastRecord> GetPodcastRecordAsync(string externalId);
+        public Task<PodcastRecord?> GetPodcastRecordAsync(string externalId);
         public Task<IEnumerable<PodcastRecord>> GetAllPodcastRecordsAsync();
         public Task UpdateTranscriptionStatusAsync(PodcastRecord entity, PodcastTranscriptionStatus status);
         public Task UpdateTranscriptionErrorAsync(PodcastRecord entity, PodcastTranscriptionError error);

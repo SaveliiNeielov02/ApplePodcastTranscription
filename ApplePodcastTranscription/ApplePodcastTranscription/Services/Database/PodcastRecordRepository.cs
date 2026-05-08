@@ -1,5 +1,6 @@
 ﻿using ApplePodcastTranscription.Interfaces;
 using ApplePodcastTranscription.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace ApplePodcastTranscription.Services.Database
 {
@@ -30,9 +31,9 @@ namespace ApplePodcastTranscription.Services.Database
             throw new NotImplementedException();
         }
 
-        public Task<PodcastRecord> GetPodcastRecordAsync(string externalId)
+        public async Task<PodcastRecord?> GetPodcastRecordAsync(string externalId)
         {
-            throw new NotImplementedException();
+            return await _context.PodcastsRecords.FirstOrDefaultAsync(record => record.ExternalId == externalId);
         }
 
         public Task UpdateDownloadedAtAsync(PodcastRecord entity, long downloadedAtInUnixTimeSeconds)
