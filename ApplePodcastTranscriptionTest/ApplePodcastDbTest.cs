@@ -1,5 +1,6 @@
 ﻿using ApplePodcastTranscription.Interfaces;
 using ApplePodcastTranscription.Models;
+using ApplePodcastTranscription.Models.DbTables;
 using ApplePodcastTranscription.Services.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,24 +15,31 @@ namespace ApplePodcastTranscriptionTest
     public class ApplePodcastDbTest
     {
         [Fact]
-        public async Task AddPodcast_ShouldBeAddedInDatabase()
+        public async Task AddSession_ShouldBeAddedInDatabase()
         {
             // Arrange
             var services = new ServiceCollection();
             services.AddDbContext<ApplePodcastDbContext>(options =>
                 options.UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString()));
-            services.AddScoped<IPodcastRecordRepository, PodcastRecordRepository>();
+            services.AddScoped<ISessionRepository, PodcastSessionRepository>();
 
             using var serviceProvider = services.BuildServiceProvider();
-            var testPodcastExternalId = "test_podcast_external_id";
-
-            var repository = serviceProvider.GetRequiredService<IPodcastRecordRepository>();
+            var testPodcastObject = new PodcastRecord() { ExternalId = "test_podcast_external_id" };
+            var testSessionObject = new TranscriptSession()
+            {
+                Guid = Guid.NewGuid(),
+                PodcastRecordId = testPodcastObject.ExternalId,
+                PodcastRecord = testPodcastObject,
+                TranscriptionStatus = SessionionStatus.Pending,
+                TranscriptionError = SessionError.None
+            };
+            var repository = serviceProvider.GetRequiredService<ISessionRepository>();
 
             // Act
-            await repository.AddPodcastRecordAsync(testPodcastExternalId);
+            await repository.AddSessionAsync(testSessionObject);
 
             // Assert
-            var podcastRecord = await repository.GetPodcastRecordAsync(testPodcastExternalId);
+            var podcastRecord = await repository.GetSessionAsync(testSessionObject.Guid);
             Assert.NotNull(podcastRecord);
         }
     }

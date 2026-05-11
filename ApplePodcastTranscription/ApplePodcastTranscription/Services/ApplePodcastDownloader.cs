@@ -22,20 +22,18 @@ namespace ApplePodcastTranscription.Services
                 ?? throw new ArgumentNullException("No value for env. variable AppleBearerToken");
         }
 
-        /// <summary>
-        /// Downloads a podcast episode from Apple Podcasts and returns it as a .wave bytes array.
-        /// </summary>
-        public async Task<byte[]> DownloadPodcastEpisodeAsync(string podcastId, bool isNeedToSaveLocally = false)
+        public async Task<AudioPodcastDto> DownloadPodcastEpisodeAsync(string podcastId, bool isNeedToSaveLocally = false)
         {
-            var assetUrl = await GetAssetUrl(podcastId);
+            var podcastData = await GetPodcastData(podcastId);
 
             using var client = _httpClientFactory.CreateClient();
             client.DefaultRequestHeaders.TryAddWithoutValidation("accept", $"audio/{AudioFormat};q=0.9,application/ogg;q=0.7,video/*;q=0.6,*/*;q=0.5");
             
             try
             {
-                var response = await client.GetAsync(assetUrl);
+                var response = await client.GetAsync(podcastData.AssetUrl);
                 response.EnsureSuccessStatusCode();
+                var downloadedTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
                 var content = await response.Content.ReadAsByteArrayAsync() 
                     ?? throw new InvalidOperationException("Obtained null content from podcast episode download");
 
@@ -43,25 +41,24 @@ namespace ApplePodcastTranscription.Services
                 {
                     await SavePodastLocallyAsync(podcastId, content);
                 }
-                return content;
+                return new AudioPodcastDto() 
+                {
+                    ExternalId = podcastData.ExternalId,
+                    Title = podcastData.Title,
+                    ArtistName = podcastData.ArtistName,
+                    IconUrl = podcastData.IconUrl,
+                    DownloadedAtInUnixTimeSeconds = downloadedTime,
+                    AudioContent = content
+                };
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error downloading podcast episode with ID {PodcastId} from URL {AssetUrl}", podcastId, assetUrl);
+                _logger.LogError(ex, "Error downloading podcast episode with ID {PodcastId} from URL {AssetUrl}", podcastId, podcastData.AssetUrl);
                 throw;
             }
 
         }
-        private async Task SavePodastLocallyAsync(string fileName, byte[] audioContent) 
-        {
-            if (!Directory.Exists(Constants.PathToDownloadedPodcasts))
-            {
-                Directory.CreateDirectory(Constants.PathToDownloadedPodcasts);
-            }
-            var tempFilePath = Path.Combine(Constants.PathToDownloadedPodcasts, $"{fileName}.{AudioFormat}");
-            await File.WriteAllBytesAsync(tempFilePath, audioContent.ToArray());
-        }
-        private async Task<string> GetAssetUrl(string podcastId) 
+        private async Task<AssetPodcastDto> GetPodcastData(string podcastId) 
         {
             var url = ApplePodcastBaseUrl.Replace("%podcastId%", podcastId);
             using var client = _httpClientFactory.CreateClient();
@@ -76,16 +73,35 @@ namespace ApplePodcastTranscription.Services
                 var content = await response.Content.ReadAsStringAsync();
 
                 var json = JObject.Parse(content);
-                var assetUrl = json["data"]?.FirstOrDefault()?["attributes"]?["assetUrl"]?.ToString() 
-                    ?? throw new InvalidOperationException("Asset URL not found");
+                var podcastData = GetPodcastData(json);
 
-                return assetUrl;
+                return podcastData;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error obtaining podcast download URL for episode with ID {PodcastId}", podcastId);
                 throw;
             }
+        }
+        private async Task SavePodastLocallyAsync(string fileName, byte[] audioContent)
+        {
+            if (!Directory.Exists(Constants.PathToDownloadedPodcasts))
+            {
+                Directory.CreateDirectory(Constants.PathToDownloadedPodcasts);
+            }
+            var tempFilePath = Path.Combine(Constants.PathToDownloadedPodcasts, $"{fileName}.{AudioFormat}");
+            await File.WriteAllBytesAsync(tempFilePath, audioContent.ToArray());
+        }
+        private AssetPodcastDto GetPodcastData(JObject podcastJson) 
+        {
+            return new AssetPodcastDto
+            {
+                ExternalId = podcastJson.SelectToken("data[0].id")?.ToString() ?? throw new InvalidOperationException("External ID not found"),
+                Title = podcastJson.SelectToken("data[0].attributes.name")?.ToString(),
+                ArtistName = podcastJson.SelectToken("data[0].attributes.artistName")?.ToString(),
+                IconUrl = podcastJson.SelectToken("data[0].attributes.artwork.url")?.ToString(),
+                AssetUrl = podcastJson.SelectToken("data[0].attributes.assetUrl")?.ToString() ?? throw new InvalidOperationException("Asset URL not found"),
+            };
         }
     }
 }

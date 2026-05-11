@@ -35,9 +35,10 @@ namespace ApplePodcastTranscriptionTest
 
             // Act
             var result = await applePodcastDownloader.DownloadPodcastEpisodeAsync(podcastId, saveLocally);
+            var audioContent = result?.AudioContent;
 
             // Assert
-            Assert.True(result != null && result.Length > 0);
+            Assert.True(audioContent != null && audioContent.Length > 0);
         }
     }
 }

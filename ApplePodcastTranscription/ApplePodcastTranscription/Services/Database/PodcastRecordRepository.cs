@@ -1,5 +1,6 @@
 ﻿using ApplePodcastTranscription.Interfaces;
 using ApplePodcastTranscription.Models;
+using ApplePodcastTranscription.Models.DbTables;
 using Microsoft.EntityFrameworkCore;
 
 namespace ApplePodcastTranscription.Services.Database
@@ -12,51 +13,12 @@ namespace ApplePodcastTranscription.Services.Database
             _context = context;
         }
 
-        public async Task AddPodcastRecordAsync(string externalId)
-        {
-            var newRecord = new PodcastRecord
-            {
-                Guid = Guid.NewGuid(),
-                ExternalId = externalId,
-                TranscriptionStatus = PodcastTranscriptionStatus.Obtained,
-                TranscriptionError = PodcastTranscriptionError.None,
-            };
-
-            _context.PodcastsRecords.Add(newRecord);
-            await _context.SaveChangesAsync();
-        }
-
-        public Task<IEnumerable<PodcastRecord>> GetAllPodcastRecordsAsync()
+        public Task AddPodcastTranscriptionAsync(PodcastRecord entity, string podcastTranscription)
         {
             throw new NotImplementedException();
         }
 
-        public async Task<PodcastRecord?> GetPodcastRecordAsync(string externalId)
-        {
-            return await _context.PodcastsRecords.FirstOrDefaultAsync(record => record.ExternalId == externalId);
-        }
-
-        public Task UpdateDownloadedAtAsync(PodcastRecord entity, long downloadedAtInUnixTimeSeconds)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task UpdateTranscribedAtAsync(PodcastRecord entity, long transcribedAtInUnixTimeSeconds)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task UpdateTranscriptionErrorAsync(PodcastRecord entity, PodcastTranscriptionError error)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task UpdateTranscriptionStatusAsync(PodcastRecord entity, PodcastTranscriptionStatus status)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task UpdateTranscriptionTextAsync(PodcastRecord entity, string transcriptionText)
+        public Task UpdateTranscribedAtInUnixTimeSecondsAsync(PodcastRecord entity, long transcribedAtInUnixTimeSeconds)
         {
             throw new NotImplementedException();
         }
