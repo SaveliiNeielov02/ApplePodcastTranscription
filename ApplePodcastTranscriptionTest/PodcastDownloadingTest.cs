@@ -8,7 +8,7 @@ using System.Text;
 
 namespace ApplePodcastTranscriptionTest
 {
-    public class ApplePodcastDownloadingTest
+    public class PodcastDownloadingTest
     {
         [Fact]
         public async Task DownloadPodcastEpisodeAsync_ShouldReturnAudioContent()
@@ -34,7 +34,7 @@ namespace ApplePodcastTranscriptionTest
                configuration);
 
             // Act
-            var result = await applePodcastDownloader.DownloadPodcastEpisodeAsync(podcastId, saveLocally);
+            var result = await applePodcastDownloader.DownloadPodcastEpisodeAsync(podcastId, new(), saveLocally);
             var audioContent = result?.AudioContent;
 
             // Assert

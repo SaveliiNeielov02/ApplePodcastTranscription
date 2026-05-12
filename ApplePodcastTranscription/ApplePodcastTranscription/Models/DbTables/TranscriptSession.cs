@@ -9,16 +9,16 @@ namespace ApplePodcastTranscription.Models.DbTables
         public required Guid Guid { get; set; }
         public required string PodcastRecordId { get; set; }
         public required PodcastRecord PodcastRecord { get; set; }
-        public required SessionionStatus TranscriptionStatus { get; set; }
+        public required SessionStatus TranscriptionStatus { get; set; }
         public required SessionError TranscriptionError { get; set; }
     }
-    public enum SessionionStatus
+    public enum SessionStatus
     {
         Pending,
         InQueue,
         InProgress,
         Completed,
-        Failed
+        Timeout
     }
     public enum SessionError
     {

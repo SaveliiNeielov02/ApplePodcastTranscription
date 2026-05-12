@@ -6,7 +6,7 @@ namespace ApplePodcastTranscription.Interfaces
 {
     public interface IPodcastRecordRepository
     {
-        public Task AddPodcastTranscriptionAsync(PodcastRecord entity, string podcastTranscription);
-        public Task UpdateTranscribedAtInUnixTimeSecondsAsync(PodcastRecord entity, long transcribedAtInUnixTimeSeconds);
+        public Task AddPodcastTranscriptionAsync(PodcastRecord entity, string podcastTranscription, long transcribedAtInUnixTimeSeconds);
+        public Task UpdatePodcastRecordAsync(PodcastRecord entity, PodcastDtoBase podcastDtoBase);
     }
 }

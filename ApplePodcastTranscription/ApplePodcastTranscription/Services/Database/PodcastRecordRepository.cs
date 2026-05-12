@@ -13,14 +13,21 @@ namespace ApplePodcastTranscription.Services.Database
             _context = context;
         }
 
-        public Task AddPodcastTranscriptionAsync(PodcastRecord entity, string podcastTranscription)
+        public async Task AddPodcastTranscriptionAsync(PodcastRecord entity, string podcastTranscription, long transcribedAtInUnixTimeSeconds)
         {
-            throw new NotImplementedException();
+            entity.TranscriptionText = podcastTranscription;
+            entity.TranscribedAtInUnixTimeSeconds = transcribedAtInUnixTimeSeconds;
+            
+            await _context.SaveChangesAsync();
         }
 
-        public Task UpdateTranscribedAtInUnixTimeSecondsAsync(PodcastRecord entity, long transcribedAtInUnixTimeSeconds)
+        public async Task UpdatePodcastRecordAsync(PodcastRecord entity, PodcastDtoBase podcastDtoBase)
         {
-            throw new NotImplementedException();
+            entity.ArtistName = podcastDtoBase.ArtistName;
+            entity.IconUrl = podcastDtoBase.IconUrl;
+            entity.Title = podcastDtoBase.Title;
+
+            await _context.SaveChangesAsync();
         }
     }
 }

@@ -9,7 +9,7 @@ using System.Text;
 
 namespace ApplePodcastTranscriptionTest
 {
-    public class ApplePodcacstTranscriptionTest
+    public class TranscriptionTest
     {
         [Fact]
         public async Task TranscriptPodcastEpisode_ShouldReturnText()
@@ -22,7 +22,7 @@ namespace ApplePodcastTranscriptionTest
             var audioFilePath = Path.Combine("DownloadedPodcasts", "1000764234023.wave");
 
             // Act
-            var transribed = await transcriber.TranscribeFileAsync(audioFilePath);
+            var transribed = await transcriber.TranscribeFileAsync(audioFilePath, new());
 
             // Assert
             Assert.False(string.IsNullOrEmpty(transribed));

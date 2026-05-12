@@ -2,6 +2,6 @@
 {
     public class AudioPodcastDto : PodcastDtoBase
     {
-        public byte[]? AudioContent { get; set; }
+        public required byte[] AudioContent { get; set; }
     }
 }

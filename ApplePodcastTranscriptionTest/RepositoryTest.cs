@@ -12,7 +12,7 @@ using System.Text;
 
 namespace ApplePodcastTranscriptionTest
 {
-    public class ApplePodcastDbTest
+    public class RepositoryTest
     {
         [Fact]
         public async Task AddSession_ShouldBeAddedInDatabase()
@@ -30,7 +30,7 @@ namespace ApplePodcastTranscriptionTest
                 Guid = Guid.NewGuid(),
                 PodcastRecordId = testPodcastObject.ExternalId,
                 PodcastRecord = testPodcastObject,
-                TranscriptionStatus = SessionionStatus.Pending,
+                TranscriptionStatus = SessionStatus.Pending,
                 TranscriptionError = SessionError.None
             };
             var repository = serviceProvider.GetRequiredService<ISessionRepository>();

@@ -1,5 +1,6 @@
 ﻿using ApplePodcastTranscription.Interfaces;
 using ApplePodcastTranscription.Models;
+using ApplePodcastTranscription.Models.Exception;
 using ApplePodcastTranscription.Services.Abstract;
 using NAudio.Wave;
 using NAudio.Wave.SampleProviders;
@@ -11,7 +12,7 @@ using Whisper.net.Logger;
 
 namespace ApplePodcastTranscription.Services
 {
-    public class WhisperSmallTranscriber : IAsyncTranscriber, IDisposable
+    public class WhisperSmallTranscriber : ITranscriber, IDisposable
     {
         private WhisperFactory _factory;
         private WhisperProcessor _processor;
@@ -34,23 +35,46 @@ namespace ApplePodcastTranscription.Services
                 .WithLanguageDetection()
                 .Build();
         }
-        public async Task<string> TranscribeBytesAsync(byte[] audioContent)
+        public async Task<string> TranscribeBytesAsync(byte[] audioContent, CancellationToken ct)
         {
-            throw new NotImplementedException();
+            try
+            {
+                var audioSamples = _audioResampler.ResampleBytes(audioContent);
+                var fullText = new List<string>();
+
+                await foreach (var segment in _processor.ProcessAsync(audioSamples.ToArray(), ct))
+                {
+                    _logger.LogInformation("Transcribed segment: [{Start} - {End}] {Text}", segment.Start, segment.End, segment.Text);
+                    fullText.Add(segment.Text);
+                }
+
+                return string.Join(" ", fullText);
+            }
+            catch (Exception ex) when (!(ex is OperationCanceledException))
+            {
+                throw new TranscribingException("An error occurred while transcribing the audio content", ex);
+            }
         }
 
-        public async Task<string> TranscribeFileAsync(string filePath)
+        public async Task<string> TranscribeFileAsync(string filePath, CancellationToken ct)
         {
-            var audioSamples = _audioResampler.ResampleFile(filePath);
-            var fullText = new List<string>();
-
-            await foreach (var segment in _processor.ProcessAsync(audioSamples.ToArray()))
+            try
             {
-                _logger.LogInformation("[{FileName}] Transcribed segment: [{Start} - {End}] {Text}", filePath, segment.Start, segment.End, segment.Text);
-                fullText.Add(segment.Text);
-            }
+                var audioSamples = _audioResampler.ResampleFile(filePath);
+                var fullText = new List<string>();
 
-            return string.Join(" ", fullText);
+                await foreach (var segment in _processor.ProcessAsync(audioSamples.ToArray(), ct))
+                {
+                    _logger.LogInformation("[{FileName}] Transcribed segment: [{Start} - {End}] {Text}", filePath, segment.Start, segment.End, segment.Text);
+                    fullText.Add(segment.Text);
+                }
+
+                return string.Join(" ", fullText);
+            }
+            catch (Exception ex) when (!(ex is OperationCanceledException))
+            {
+                throw new TranscribingException("An error occurred while transcribing the audio file", ex);
+            }
         }
         public void Dispose()
         {

@@ -1,4 +1,5 @@
 ﻿using ApplePodcastTranscription.Models;
+using ApplePodcastTranscription.Models.Exception;
 using Newtonsoft.Json.Linq;
 using System.Collections.ObjectModel;
 using System.Runtime.InteropServices.JavaScript;
@@ -22,7 +23,7 @@ namespace ApplePodcastTranscription.Services
                 ?? throw new ArgumentNullException("No value for env. variable AppleBearerToken");
         }
 
-        public async Task<AudioPodcastDto> DownloadPodcastEpisodeAsync(string podcastId, bool isNeedToSaveLocally = false)
+        public async Task<AudioPodcastDto> DownloadPodcastEpisodeAsync(string podcastId, CancellationToken downloadCt, bool isNeedToSaveLocally = false)
         {
             var podcastData = await GetPodcastData(podcastId);
 
@@ -31,7 +32,7 @@ namespace ApplePodcastTranscription.Services
             
             try
             {
-                var response = await client.GetAsync(podcastData.AssetUrl);
+                var response = await client.GetAsync(podcastData.AssetUrl, downloadCt);
                 response.EnsureSuccessStatusCode();
                 var downloadedTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
                 var content = await response.Content.ReadAsByteArrayAsync() 
@@ -51,10 +52,13 @@ namespace ApplePodcastTranscription.Services
                     AudioContent = content
                 };
             }
+            catch (OperationCanceledException ex)
+            {
+                throw new DownloadTimeoutException("Download timed out", ex);
+            }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error downloading podcast episode with ID {PodcastId} from URL {AssetUrl}", podcastId, podcastData.AssetUrl);
-                throw;
+                throw new DownloadException("An error occurred while downloading the podcast episode", ex); 
             }
 
         }
@@ -79,8 +83,7 @@ namespace ApplePodcastTranscription.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error obtaining podcast download URL for episode with ID {PodcastId}", podcastId);
-                throw;
+                throw new DownloadException("An error occurred while fetching podcast data", ex);
             }
         }
         private async Task SavePodastLocallyAsync(string fileName, byte[] audioContent)

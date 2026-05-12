@@ -19,7 +19,7 @@ namespace ApplePodcastTranscription.Services.Database
             await _context.SaveChangesAsync();
         }
 
-        public Task<IEnumerable<TranscriptSession>> GetAllSessionsAsync()
+        public async Task<IEnumerable<TranscriptSession>> GetAllSessionsAsync()
         {
             throw new NotImplementedException();
         }
@@ -29,24 +29,18 @@ namespace ApplePodcastTranscription.Services.Database
             return await _context.TranscriptSessions.FirstOrDefaultAsync(s => s.Guid == sessionGuid);
         }
 
-        public Task UpdateDownloadedAtAsync(TranscriptSession entity, long downloadedAtInUnixTimeSeconds)
+        public async Task UpdateSessionErrorAsync(TranscriptSession entity, SessionError error)
         {
-            throw new NotImplementedException();
+            entity.TranscriptionError = error;
+
+            await _context.SaveChangesAsync();  
         }
 
-        public Task UpdateSessionErrorAsync(TranscriptSession entity, SessionError error)
+        public async Task UpdateSessionStatusAsync(TranscriptSession entity, SessionStatus status)
         {
-            throw new NotImplementedException();
-        }
+            entity.TranscriptionStatus = status;
 
-        public Task UpdateSessionStatusAsync(TranscriptSession entity, SessionionStatus status)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task UpdateTranscribedAtAsync(TranscriptSession entity, long transcribedAtInUnixTimeSeconds)
-        {
-            throw new NotImplementedException();
+            await _context.SaveChangesAsync();
         }
     }
 }
