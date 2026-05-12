@@ -13,20 +13,20 @@ namespace ApplePodcastTranscription.Services
         private readonly ISessionRepository _sessionRepository;
         private readonly IPodcastRecordRepository _podcastRecordRepository;
 
-        private readonly TranscriptQueue _transcriptionQueue;
-        private readonly ApplePodcastDownloader _podcastDownloader;
+        private readonly ITranscriptQueue _transcriptQueue;
+        private readonly IApplePodcastDownloader _podcastDownloader;
         private readonly ILogger _logger;
 
         public SessionWorker(
             ISessionRepository sessionRepository,
             IPodcastRecordRepository podcastRecordRepository,
-            TranscriptQueue transcriptionQueue,
-            ApplePodcastDownloader podcastDownloader,
+            ITranscriptQueue transcriptQueue,
+            IApplePodcastDownloader podcastDownloader,
             ILogger logger)
         {
             _sessionRepository = sessionRepository;
             _podcastRecordRepository = podcastRecordRepository;
-            _transcriptionQueue = transcriptionQueue;
+            _transcriptQueue = transcriptQueue;
             _podcastDownloader = podcastDownloader;
             _logger = logger;
         }
@@ -42,7 +42,7 @@ namespace ApplePodcastTranscription.Services
                 await _sessionRepository.UpdateSessionStatusAsync(session, SessionStatus.InQueue);
 
                 // New task creating to prevent long-running SessionWorker and to dispose scoped services
-                _ = Task.Run(async () => await _transcriptionQueue.ProcessTranscriptionAsync(session.Guid, audioPodcastDto.AudioContent));
+                _ = Task.Run(async () => await _transcriptQueue.EnqueueSessionAsync(session.Guid, audioPodcastDto.AudioContent));
             }
             catch (Exception ex) 
             {

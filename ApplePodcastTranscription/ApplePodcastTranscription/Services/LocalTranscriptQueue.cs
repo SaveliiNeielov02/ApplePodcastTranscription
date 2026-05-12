@@ -5,7 +5,7 @@ using ApplePodcastTranscription.Services.Database;
 
 namespace ApplePodcastTranscription.Services
 {
-    public class TranscriptQueue
+    public class LocalTranscriptQueue : ITranscriptQueue
     {
         private const int SemaphoreThreshold = 1; // Only one transcription at a time
 
@@ -15,13 +15,13 @@ namespace ApplePodcastTranscription.Services
         private readonly ILogger _logger;
         private readonly SemaphoreSlim _queueSemaphore;
         private readonly IServiceScopeFactory _serviceScopeFactory;
-        public TranscriptQueue(ILogger logger, IServiceScopeFactory serviceScopeFactory) 
+        public LocalTranscriptQueue(ILogger logger, IServiceScopeFactory serviceScopeFactory) 
         {
             _queueSemaphore = new SemaphoreSlim(1, SemaphoreThreshold);
             _logger = logger;
             _serviceScopeFactory = serviceScopeFactory;
         }
-        public async Task ProcessTranscriptionAsync(Guid sessionGuid, byte[] audioContent) 
+        public async Task EnqueueSessionAsync(Guid sessionGuid, byte[] audioContent) 
         {
             using var queueCts = new CancellationTokenSource(TimeSpan.FromMinutes(QueueTimeoutInMinutes));
             using var transcriptCts = new CancellationTokenSource(TimeSpan.FromMinutes(TranscriptTimeoutInMinutes));

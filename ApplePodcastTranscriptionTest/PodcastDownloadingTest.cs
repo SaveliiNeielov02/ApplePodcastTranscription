@@ -22,15 +22,14 @@ namespace ApplePodcastTranscriptionTest
             httpClientFactory.Setup(_ => _.CreateClient(It.IsAny<string>())).Returns(() => new HttpClient());
 
             // Mock the logger
-            var logger = new Mock<Microsoft.Extensions.Logging.ILogger<ApplePodcastTranscription.Services.ApplePodcastDownloader>>();
+            var logger = new Mock<Microsoft.Extensions.Logging.ILogger<ApplePodcastTranscription.Services.DirectApplePodcastDownloader>>();
 
             // Mock the configuration
             var builder = new ConfigurationBuilder().AddUserSecrets<Program>();
             var configuration = builder.Build();
 
-            var applePodcastDownloader = new ApplePodcastTranscription.Services.ApplePodcastDownloader(
+            var applePodcastDownloader = new ApplePodcastTranscription.Services.DirectApplePodcastDownloader(
                 httpClientFactory.Object,
-                logger.Object,
                configuration);
 
             // Act

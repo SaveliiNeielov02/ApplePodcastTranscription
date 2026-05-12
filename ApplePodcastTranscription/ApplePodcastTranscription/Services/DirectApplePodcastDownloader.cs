@@ -1,4 +1,5 @@
-﻿using ApplePodcastTranscription.Models;
+﻿using ApplePodcastTranscription.Interfaces;
+using ApplePodcastTranscription.Models;
 using ApplePodcastTranscription.Models.Exception;
 using Newtonsoft.Json.Linq;
 using System.Collections.ObjectModel;
@@ -6,19 +7,19 @@ using System.Runtime.InteropServices.JavaScript;
 
 namespace ApplePodcastTranscription.Services
 {
-    public class ApplePodcastDownloader
+    // This class is responsible for downloading podcast episodes directly from Apple Podcasts using their web API.
+    // There are other sources to download apple podcasts, but this implementation is more reliable and faster than using third-party services.
+    public class DirectApplePodcastDownloader : IApplePodcastDownloader
     {
         private const string ApplePodcastBaseUrl = "https://amp-api.podcasts.apple.com/v1/catalog/de/podcast-episodes/%podcastId%?include=channel%2Cpodcast&include%5Bpodcasts%5D=episodes%2Cpodcast-seasons%2Ctrailers&include%5Bpodcast-seasons%5D=episodes&fields=artistName%2Cartwork%2CassetUrl%2CcontentRating%2Cdescription%2CdurationInMilliseconds%2CepisodeNumber%2Cguid%2CisExplicit%2Ckind%2CmediaKind%2Cname%2Coffers%2CreleaseDateTime%2Cseason%2CseasonNumber%2CstoreUrl%2Csummary%2Ctitle%2Curl&with=entitlements%2ChlsVideo&l=de-DE";
         private const string AudioFormat = "wave";
         
         private readonly IHttpClientFactory _httpClientFactory;
-        private readonly ILogger _logger;
-        private readonly string _appleBearerToken;
+        private readonly string _appleBearerToken; // Need to be added as environment variable AppleBearerToken, can be obtained from Apple Podcasts web app network requests (must be periodically updated)
 
-        public ApplePodcastDownloader(IHttpClientFactory httpClientFactory, ILogger logger, IConfiguration configuration)
+        public DirectApplePodcastDownloader(IHttpClientFactory httpClientFactory, IConfiguration configuration)
         {
             _httpClientFactory = httpClientFactory;
-            _logger = logger;
             _appleBearerToken = configuration.GetValue<string?>("AppleBearer") 
                 ?? throw new ArgumentNullException("No value for env. variable AppleBearerToken");
         }
