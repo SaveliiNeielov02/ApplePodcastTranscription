@@ -18,13 +18,15 @@ namespace ApplePodcastTranscription.Models.DbTables
         InQueue,
         InProgress,
         Completed,
-        Timeout
+        Failed
     }
     public enum SessionError
     {
         None,
         DownloadFailed,
+        DownloadTimeout,
         TranscriptionFailed,
+        TranscriptionTimeout,
         UnknownError
     }
 }
