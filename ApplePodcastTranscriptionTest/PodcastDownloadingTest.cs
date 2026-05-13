@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Moq;
 using System.Collections.ObjectModel;
 using System.Text;
+using ApplePodcastTranscription.Services;
 
 namespace ApplePodcastTranscriptionTest
 {
@@ -15,29 +16,32 @@ namespace ApplePodcastTranscriptionTest
         {
             // Arrange
             var podcastId = "1000764234023";
-            bool saveLocally = true;
+            var buffer = new byte[512];
 
             // Mock the HttpClientFactory
             var httpClientFactory = new Mock<IHttpClientFactory>();
             httpClientFactory.Setup(_ => _.CreateClient(It.IsAny<string>())).Returns(() => new HttpClient());
 
-            // Mock the logger
-            var logger = new Mock<Microsoft.Extensions.Logging.ILogger<ApplePodcastTranscription.Services.DirectApplePodcastDownloader>>();
+            // Mock file IO
+            var podcastFileIo = new LocalPodcastFileIo();
 
             // Mock the configuration
             var builder = new ConfigurationBuilder().AddUserSecrets<Program>();
             var configuration = builder.Build();
 
-            var applePodcastDownloader = new ApplePodcastTranscription.Services.DirectApplePodcastDownloader(
+            var applePodcastDownloader = new DirectApplePodcastDownloader(
                 httpClientFactory.Object,
-               configuration);
+               configuration, podcastFileIo);
 
             // Act
-            var result = await applePodcastDownloader.DownloadPodcastEpisodeAsync(podcastId, new(), saveLocally);
-            var audioContent = result?.AudioContent;
+            var result = await applePodcastDownloader.DownloadPodcastEpisodeAsync(podcastId, podcastId, CancellationToken.None);
+
+            var audioFilePath = result.AudioFilePath;
+            var audioContent = podcastFileIo.ReadAsFileStream(audioFilePath);
+            var bytesRead = await audioContent.ReadAsync(buffer, 0, buffer.Length);
 
             // Assert
-            Assert.True(audioContent != null && audioContent.Length > 0);
+            Assert.True(bytesRead > 0);
         }
     }
 }

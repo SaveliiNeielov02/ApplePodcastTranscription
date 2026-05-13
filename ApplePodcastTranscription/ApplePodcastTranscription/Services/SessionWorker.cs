@@ -42,7 +42,7 @@ namespace ApplePodcastTranscription.Services
                 await _sessionRepository.UpdateSessionStatusAsync(session, SessionStatus.InQueue);
 
                 // New task creating to prevent long-running SessionWorker and to dispose scoped services
-                _ = Task.Run(async () => await _transcriptQueue.EnqueueSessionAsync(session.Guid, audioPodcastDto.AudioContent));
+                _ = Task.Run(async () => await _transcriptQueue.EnqueueSessionAsync(session.Guid, audioPodcastDto.AudioFilePath));
             }
             catch (Exception ex) 
             {
@@ -83,7 +83,7 @@ namespace ApplePodcastTranscription.Services
             try
             {
                 using var downloadCts = new CancellationTokenSource(TimeSpan.FromMinutes(DownloadTimeoutInMinutes));
-                var podcastDto = await _podcastDownloader.DownloadPodcastEpisodeAsync(externalId, downloadCts.Token);
+                var podcastDto = await _podcastDownloader.DownloadPodcastEpisodeAsync(externalId, session.Guid.ToString(), downloadCts.Token);
 
                 _logger.LogInformation("Downloaded podcast episode for Id: {PodcastId}", externalId);
 

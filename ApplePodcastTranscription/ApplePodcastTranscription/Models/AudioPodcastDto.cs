@@ -2,6 +2,6 @@
 {
     public class AudioPodcastDto : PodcastDtoBase
     {
-        public required byte[] AudioContent { get; set; }
+        public required string AudioFilePath { get; set; }
     }
 }

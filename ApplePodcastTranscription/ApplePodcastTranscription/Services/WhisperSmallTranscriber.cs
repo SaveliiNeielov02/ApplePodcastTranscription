@@ -1,10 +1,10 @@
 ﻿using ApplePodcastTranscription.Interfaces;
 using ApplePodcastTranscription.Models;
 using ApplePodcastTranscription.Models.Exception;
-using ApplePodcastTranscription.Services.Abstract;
 using NAudio.Wave;
 using NAudio.Wave.SampleProviders;
 using System.Collections.ObjectModel;
+using System.Text;
 using Whisper.net;
 using Whisper.net.Ggml;
 using Whisper.net.Logger;
@@ -14,8 +14,10 @@ namespace ApplePodcastTranscription.Services
 {
     public class WhisperSmallTranscriber : ITranscriber, IDisposable
     {
-        private WhisperFactory _factory;
-        private WhisperProcessor _processor;
+        private readonly WhisperFactory _factory;
+        private readonly WhisperProcessor _processor;
+
+        private readonly string _outputWaveFileFolder = Path.Combine(Directory.GetCurrentDirectory(), "ResampledAudio");
         private readonly WhisperSmallAudioResampler _audioResampler;
         private readonly ILogger _logger;
 
@@ -27,7 +29,10 @@ namespace ApplePodcastTranscription.Services
             {
                 throw new FileNotFoundException($"Model file not found at path: {_modelPath}");
             }
-
+            if (!Directory.Exists(_outputWaveFileFolder)) 
+            {
+                Directory.CreateDirectory(_outputWaveFileFolder);
+            }
             _logger = logger;
             _audioResampler = audioResampler;
             _factory = WhisperFactory.FromPath(_modelPath, new WhisperFactoryOptions());
@@ -35,45 +40,32 @@ namespace ApplePodcastTranscription.Services
                 .WithLanguageDetection()
                 .Build();
         }
-        public async Task<string> TranscribeBytesAsync(byte[] audioContent, CancellationToken ct)
+        public async Task<string> TranscribeStreamAsync(Guid sessionGuid, Stream audioStream, CancellationToken ct)
         {
+            var tempFilePath = Path.Combine(_outputWaveFileFolder, $"{sessionGuid}.wave");
+
             try
             {
-                var audioSamples = _audioResampler.ResampleBytes(audioContent);
-                var fullText = new List<string>();
+                await using var resampledAudioStream = _audioResampler.ResampleToWaveStream(audioStream, tempFilePath);
+                var fullTextBuilder = new StringBuilder();
 
-                await foreach (var segment in _processor.ProcessAsync(audioSamples.ToArray(), ct))
+                await foreach (var segment in _processor.ProcessAsync(resampledAudioStream, ct))
                 {
-                    _logger.LogInformation("Transcribed segment: [{Start} - {End}] {Text}", segment.Start, segment.End, segment.Text);
-                    fullText.Add(segment.Text);
+                    _logger.LogInformation("[{SessionGuid}] Transcribed segment: [{Start} - {End}] {Text}", sessionGuid.ToString(),
+                        segment.Start, segment.End, segment.Text);
+
+                    fullTextBuilder.Append(segment.Text).Append(' ');
                 }
 
-                return string.Join(" ", fullText);
-            }
-            catch (Exception ex) when (!(ex is OperationCanceledException))
-            {
-                throw new TranscribingException("An error occurred while transcribing the audio content", ex);
-            }
-        }
-
-        public async Task<string> TranscribeFileAsync(string filePath, CancellationToken ct)
-        {
-            try
-            {
-                var audioSamples = _audioResampler.ResampleFile(filePath);
-                var fullText = new List<string>();
-
-                await foreach (var segment in _processor.ProcessAsync(audioSamples.ToArray(), ct))
-                {
-                    _logger.LogInformation("[{FileName}] Transcribed segment: [{Start} - {End}] {Text}", filePath, segment.Start, segment.End, segment.Text);
-                    fullText.Add(segment.Text);
-                }
-
-                return string.Join(" ", fullText);
+                return fullTextBuilder.ToString().Trim();
             }
             catch (Exception ex) when (!(ex is OperationCanceledException))
             {
                 throw new TranscribingException("An error occurred while transcribing the audio file", ex);
+            }
+            finally
+            {
+                File.Delete(tempFilePath);
             }
         }
         public void Dispose()

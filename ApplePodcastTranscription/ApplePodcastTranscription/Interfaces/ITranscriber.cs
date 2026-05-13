@@ -1,10 +1,10 @@
-﻿using System.Collections.ObjectModel;
+﻿using NAudio.Wave;
+using System.Collections.ObjectModel;
 
 namespace ApplePodcastTranscription.Interfaces
 {
     public interface ITranscriber
     {
-        public Task<string> TranscribeBytesAsync(byte[] audioContent, CancellationToken ct);
-        public Task<string> TranscribeFileAsync(string filePath, CancellationToken ct);
+        public Task<string> TranscribeStreamAsync(Guid sessionGuid, Stream audioStream, CancellationToken ct);
     }
 }

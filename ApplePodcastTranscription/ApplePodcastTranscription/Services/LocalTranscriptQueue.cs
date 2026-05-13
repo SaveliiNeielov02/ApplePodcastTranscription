@@ -21,7 +21,7 @@ namespace ApplePodcastTranscription.Services
             _logger = logger;
             _serviceScopeFactory = serviceScopeFactory;
         }
-        public async Task EnqueueSessionAsync(Guid sessionGuid, byte[] audioContent) 
+        public async Task EnqueueSessionAsync(Guid sessionGuid, string audioFilePath) 
         {
             using var queueCts = new CancellationTokenSource(TimeSpan.FromMinutes(QueueTimeoutInMinutes));
             using var transcriptCts = new CancellationTokenSource(TimeSpan.FromMinutes(TranscriptTimeoutInMinutes));
@@ -38,18 +38,20 @@ namespace ApplePodcastTranscription.Services
                 var transcriber = scope.ServiceProvider.GetRequiredService<ITranscriber>();
                 var podcastRepository = scope.ServiceProvider.GetRequiredService<IPodcastRecordRepository>();
                 var podcastSessionRepository = scope.ServiceProvider.GetRequiredService<ISessionRepository>();
+                var podcastFileIo = scope.ServiceProvider.GetRequiredService<IPodcastFileIo>();
                 var session = await podcastSessionRepository.GetSessionAsync(sessionGuid) 
                     ?? throw new InvalidOperationException($"Session with GUID {sessionGuid} not found.");
 
                 _logger.LogInformation("Starting transcription for session {SessionGuid}", sessionGuid);
 
-                await podcastSessionRepository!.UpdateSessionStatusAsync(session, SessionStatus.InProgress);
+                await podcastSessionRepository.UpdateSessionStatusAsync(session, SessionStatus.InProgress);
 
-                var transcription = await transcriber!.TranscribeBytesAsync(audioContent, transcriptCts.Token);
+                await using var inputStream = podcastFileIo.ReadAsFileStream(audioFilePath);
+                var transcription = await transcriber.TranscribeStreamAsync(sessionGuid, inputStream, transcriptCts.Token);
 
-                await podcastRepository!.AddPodcastTranscriptionAsync(session.PodcastRecord, transcription, DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+                await podcastRepository.AddPodcastTranscriptionAsync(session.PodcastRecord, transcription, DateTimeOffset.UtcNow.ToUnixTimeSeconds());
                 
-                await podcastSessionRepository!.UpdateSessionStatusAsync(session, SessionStatus.Completed);
+                await podcastSessionRepository.UpdateSessionStatusAsync(session, SessionStatus.Completed);
             }
             catch (TranscribingException ex)
             {

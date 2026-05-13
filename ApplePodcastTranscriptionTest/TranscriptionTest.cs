@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Text;
+using ApplePodcastTranscription.Services;
 
 namespace ApplePodcastTranscriptionTest
 {
@@ -15,17 +16,18 @@ namespace ApplePodcastTranscriptionTest
         public async Task TranscriptPodcastEpisode_ShouldReturnText()
         {
             // Arrange
-            var loggerMock = new Mock<ILogger<ApplePodcastTranscription.Services.WhisperSmallTranscriber>>();
-            var audioResampler = new ApplePodcastTranscription.Services.WhisperSmallWaveAudioResampler();
+            var loggerMock = new Mock<ILogger<WhisperSmallTranscriber>>();
+            var audioResampler = new WhisperSmallAudioResampler();
+            
+            var transcriber = new WhisperSmallTranscriber(loggerMock.Object, audioResampler);
+            var audioFilePath = Path.Combine("DownloadedPodcasts", "test_small_sample.mp3");
 
-            var transcriber = new ApplePodcastTranscription.Services.WhisperSmallTranscriber(loggerMock.Object, audioResampler);
-            var audioFilePath = Path.Combine("DownloadedPodcasts", "1000764234023.wave");
-
+            await using var audioStream = new FileStream(audioFilePath, FileMode.Open, FileAccess.Read);
             // Act
-            var transribed = await transcriber.TranscribeFileAsync(audioFilePath, new());
+            var transcribed = await transcriber.TranscribeStreamAsync(Guid.NewGuid(), audioStream, CancellationToken.None);
 
             // Assert
-            Assert.False(string.IsNullOrEmpty(transribed));
+            Assert.False(string.IsNullOrEmpty(transcribed));
         }    
     }   
 }

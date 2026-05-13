@@ -15,43 +15,48 @@ namespace ApplePodcastTranscription.Services
         private const string AudioFormat = "wave";
         
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly IPodcastFileIo _podcastFileIo;
         private readonly string _appleBearerToken; // Need to be added as environment variable AppleBearerToken, can be obtained from Apple Podcasts web app network requests (must be periodically updated)
 
-        public DirectApplePodcastDownloader(IHttpClientFactory httpClientFactory, IConfiguration configuration)
+        public DirectApplePodcastDownloader(IHttpClientFactory httpClientFactory, IConfiguration configuration, IPodcastFileIo podcastFileIo)
         {
             _httpClientFactory = httpClientFactory;
+            _podcastFileIo = podcastFileIo;
             _appleBearerToken = configuration.GetValue<string?>("AppleBearer") 
                 ?? throw new ArgumentNullException("No value for env. variable AppleBearerToken");
         }
 
-        public async Task<AudioPodcastDto> DownloadPodcastEpisodeAsync(string podcastId, CancellationToken downloadCt, bool isNeedToSaveLocally = false)
+        public async Task<AudioPodcastDto> DownloadPodcastEpisodeAsync(string podcastId, string fileName, CancellationToken downloadCt)
         {
             var podcastData = await GetPodcastData(podcastId);
 
             using var client = _httpClientFactory.CreateClient();
             client.DefaultRequestHeaders.TryAddWithoutValidation("accept", $"audio/{AudioFormat};q=0.9,application/ogg;q=0.7,video/*;q=0.6,*/*;q=0.5");
-            
+
             try
             {
-                var response = await client.GetAsync(podcastData.AssetUrl, downloadCt);
+                var response = await client.GetAsync(podcastData.AssetUrl, HttpCompletionOption.ResponseHeadersRead, downloadCt);
                 response.EnsureSuccessStatusCode();
                 var downloadedTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-                var content = await response.Content.ReadAsByteArrayAsync() 
-                    ?? throw new InvalidOperationException("Obtained null content from podcast episode download");
 
-                if (isNeedToSaveLocally) 
-                {
-                    await SavePodastLocallyAsync(podcastId, content);
-                }
-                return new AudioPodcastDto() 
+                await using var contentStream = await response.Content.ReadAsStreamAsync(downloadCt);
+
+                var filePath = _podcastFileIo.GetFilePath(fileName, AudioFormat);
+                await _podcastFileIo.WriteStreamAsync(filePath, contentStream);
+
+                return new AudioPodcastDto
                 {
                     ExternalId = podcastData.ExternalId,
                     Title = podcastData.Title,
                     ArtistName = podcastData.ArtistName,
                     IconUrl = podcastData.IconUrl,
                     DownloadedAtInUnixTimeSeconds = downloadedTime,
-                    AudioContent = content
+                    AudioFilePath = filePath
                 };
+            }
+            catch (IOException ex) 
+            {
+                throw new DownloadException("An error occurred while saving the podcast episode locally", ex);
             }
             catch (OperationCanceledException ex)
             {
@@ -59,7 +64,7 @@ namespace ApplePodcastTranscription.Services
             }
             catch (Exception ex)
             {
-                throw new DownloadException("An error occurred while downloading the podcast episode", ex); 
+                throw new DownloadException("An error occurred while downloading the podcast episode", ex);
             }
 
         }
@@ -86,15 +91,6 @@ namespace ApplePodcastTranscription.Services
             {
                 throw new DownloadException("An error occurred while fetching podcast data", ex);
             }
-        }
-        private async Task SavePodastLocallyAsync(string fileName, byte[] audioContent)
-        {
-            if (!Directory.Exists(Constants.PathToDownloadedPodcasts))
-            {
-                Directory.CreateDirectory(Constants.PathToDownloadedPodcasts);
-            }
-            var tempFilePath = Path.Combine(Constants.PathToDownloadedPodcasts, $"{fileName}.{AudioFormat}");
-            await File.WriteAllBytesAsync(tempFilePath, audioContent.ToArray());
         }
         private AssetPodcastDto GetPodcastData(JObject podcastJson) 
         {

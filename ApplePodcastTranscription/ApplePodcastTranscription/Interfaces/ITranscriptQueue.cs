@@ -2,6 +2,6 @@
 {
     public interface ITranscriptQueue
     {
-        public Task EnqueueSessionAsync(Guid sessionGuid, byte[] audioContent);
+        public Task EnqueueSessionAsync(Guid sessionGuid, string audioFilePath);
     }
 }

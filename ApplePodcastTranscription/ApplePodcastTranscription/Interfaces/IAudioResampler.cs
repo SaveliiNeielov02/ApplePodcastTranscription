@@ -5,7 +5,6 @@ namespace ApplePodcastTranscription.Interfaces
 {
     public interface IAudioResampler
     {
-        public abstract float[] ResampleBytes(byte[] audioContent);
-        public float[] ResampleFile(string filePath);
+        public Stream ResampleToWaveStream(Stream inputStream, string outputWaveFilePath);
     }
 }
