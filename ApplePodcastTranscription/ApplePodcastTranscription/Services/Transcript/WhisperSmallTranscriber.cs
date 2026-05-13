@@ -23,7 +23,7 @@ namespace ApplePodcastTranscription.Services.Transcript
 
         private readonly string _modelPath = Path.Combine("Resources", "STTModels", "WhisperSmall", "ggml-small.bin");
 
-        public WhisperSmallTranscriber(ILogger logger, WhisperSmallAudioResampler audioResampler) 
+        public WhisperSmallTranscriber(ILogger logger, IConfiguration configuration, WhisperSmallAudioResampler audioResampler) 
         {
             if (!File.Exists(_modelPath)) 
             {
@@ -36,9 +36,8 @@ namespace ApplePodcastTranscription.Services.Transcript
             _logger = logger;
             _audioResampler = audioResampler;
 
-            LogProvider.AddConsoleLogging(WhisperLogLevel.Debug);
-
-            _factory = WhisperFactory.FromPath(_modelPath, new WhisperFactoryOptions { UseGpu = true });
+            var useGpu = configuration.GetValue<bool?>("UseGpuForTranscription") ?? true;
+            _factory = WhisperFactory.FromPath(_modelPath, new WhisperFactoryOptions { UseGpu = useGpu });
             _processor = _factory.CreateBuilder()
                 .WithLanguageDetection()
                 .Build();

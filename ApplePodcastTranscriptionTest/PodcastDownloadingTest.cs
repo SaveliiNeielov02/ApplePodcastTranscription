@@ -16,7 +16,7 @@ namespace ApplePodcastTranscriptionTest
         public async Task DownloadPodcastEpisodeAsync_ShouldReturnAudioContent()
         {
             // Arrange
-            var podcastId = "1000764234023";
+            var podcastId = "1000767418728";
             var buffer = new byte[512];
 
             // Mock the HttpClientFactory

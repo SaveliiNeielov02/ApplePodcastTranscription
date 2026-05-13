@@ -1,4 +1,6 @@
-﻿using ApplePodcastTranscription.Services.Database;
+﻿using ApplePodcastTranscription.Services;
+using ApplePodcastTranscription.Services.Database;
+using ApplePodcastTranscription.Services.Transcript;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -6,8 +8,8 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Text;
-using ApplePodcastTranscription.Services;
-using ApplePodcastTranscription.Services.Transcript;
+using Whisper.net.Logger;
+using Xunit.Abstractions;
 
 namespace ApplePodcastTranscriptionTest
 {
@@ -19,9 +21,11 @@ namespace ApplePodcastTranscriptionTest
             // Arrange
             var loggerMock = new Mock<ILogger<WhisperSmallTranscriber>>();
             var audioResampler = new WhisperSmallAudioResampler();
-            
-            var transcriber = new WhisperSmallTranscriber(loggerMock.Object, audioResampler);
-            var audioFilePath = Path.Combine("DownloadedPodcasts", "test_small_sample.mp3");
+            var builder = new ConfigurationBuilder().AddUserSecrets<Program>();
+            var configuration = builder.Build();
+
+            var transcriber = new WhisperSmallTranscriber(loggerMock.Object, configuration, audioResampler);
+            var audioFilePath = Path.Combine("DownloadedPodcasts", "1000767418728.wave");
 
             await using var audioStream = new FileStream(audioFilePath, FileMode.Open, FileAccess.Read);
             // Act
@@ -29,6 +33,6 @@ namespace ApplePodcastTranscriptionTest
 
             // Assert
             Assert.False(string.IsNullOrEmpty(transcribed));
-        }    
+        }
     }   
 }
