@@ -1,10 +1,10 @@
 ﻿using ApplePodcastTranscription.Interfaces;
-using ApplePodcastTranscription.Models;
 using ApplePodcastTranscription.Models.DbTables;
 using ApplePodcastTranscription.Models.Exception;
+using ApplePodcastTranscription.Models.PodcastDto;
 using ApplePodcastTranscription.Services.Database;
 
-namespace ApplePodcastTranscription.Services
+namespace ApplePodcastTranscription.Services.Session
 {
     public class SessionWorker
     {

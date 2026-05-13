@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Text;
 using ApplePodcastTranscription.Services;
+using ApplePodcastTranscription.Services.Transcript;
 
 namespace ApplePodcastTranscriptionTest
 {

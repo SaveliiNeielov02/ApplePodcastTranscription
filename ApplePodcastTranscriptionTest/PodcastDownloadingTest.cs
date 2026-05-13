@@ -6,6 +6,7 @@ using Moq;
 using System.Collections.ObjectModel;
 using System.Text;
 using ApplePodcastTranscription.Services;
+using ApplePodcastTranscription.Services.Session;
 
 namespace ApplePodcastTranscriptionTest
 {

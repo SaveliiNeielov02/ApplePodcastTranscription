@@ -1,4 +1,4 @@
-﻿namespace ApplePodcastTranscription.Models
+﻿namespace ApplePodcastTranscription.Models.PodcastDto
 {
     public class PodcastDtoBase
     {

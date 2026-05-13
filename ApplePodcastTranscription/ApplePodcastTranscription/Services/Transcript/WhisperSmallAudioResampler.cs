@@ -2,7 +2,7 @@
 using NAudio.Wave;
 using NAudio.Wave.SampleProviders;
 
-namespace ApplePodcastTranscription.Services
+namespace ApplePodcastTranscription.Services.Transcript
 {
     public class WhisperSmallAudioResampler : IAudioResampler
     {

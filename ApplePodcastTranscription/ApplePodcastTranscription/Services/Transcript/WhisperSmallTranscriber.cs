@@ -10,7 +10,7 @@ using Whisper.net.Ggml;
 using Whisper.net.Logger;
 
 
-namespace ApplePodcastTranscription.Services
+namespace ApplePodcastTranscription.Services.Transcript
 {
     public class WhisperSmallTranscriber : ITranscriber, IDisposable
     {
@@ -35,7 +35,10 @@ namespace ApplePodcastTranscription.Services
             }
             _logger = logger;
             _audioResampler = audioResampler;
-            _factory = WhisperFactory.FromPath(_modelPath, new WhisperFactoryOptions());
+
+            LogProvider.AddConsoleLogging(WhisperLogLevel.Debug);
+
+            _factory = WhisperFactory.FromPath(_modelPath, new WhisperFactoryOptions { UseGpu = true });
             _processor = _factory.CreateBuilder()
                 .WithLanguageDetection()
                 .Build();

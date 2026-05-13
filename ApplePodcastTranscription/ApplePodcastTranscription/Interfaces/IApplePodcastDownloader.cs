@@ -1,4 +1,4 @@
-﻿using ApplePodcastTranscription.Models;
+﻿using ApplePodcastTranscription.Models.PodcastDto;
 
 namespace ApplePodcastTranscription.Interfaces
 {

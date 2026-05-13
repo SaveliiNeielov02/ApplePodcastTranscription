@@ -1,6 +1,6 @@
 ﻿using ApplePodcastTranscription.Interfaces;
 
-namespace ApplePodcastTranscription.Services
+namespace ApplePodcastTranscription.Services.Session
 {
     using System.IO;
     using System.Threading.Tasks;

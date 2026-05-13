@@ -1,11 +1,11 @@
 ﻿using ApplePodcastTranscription.Interfaces;
-using ApplePodcastTranscription.Models;
 using ApplePodcastTranscription.Models.Exception;
+using ApplePodcastTranscription.Models.PodcastDto;
 using Newtonsoft.Json.Linq;
 using System.Collections.ObjectModel;
 using System.Runtime.InteropServices.JavaScript;
 
-namespace ApplePodcastTranscription.Services
+namespace ApplePodcastTranscription.Services.Session
 {
     // This class is responsible for downloading podcast episodes directly from Apple Podcasts using their web API.
     // There are other sources to download apple podcasts, but this implementation is more reliable and faster than using third-party services.

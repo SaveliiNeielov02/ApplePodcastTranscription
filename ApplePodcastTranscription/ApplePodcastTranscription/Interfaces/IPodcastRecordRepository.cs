@@ -1,5 +1,5 @@
-﻿using ApplePodcastTranscription.Models;
-using ApplePodcastTranscription.Models.DbTables;
+﻿using ApplePodcastTranscription.Models.DbTables;
+using ApplePodcastTranscription.Models.PodcastDto;
 using System.Runtime.CompilerServices;
 
 namespace ApplePodcastTranscription.Interfaces

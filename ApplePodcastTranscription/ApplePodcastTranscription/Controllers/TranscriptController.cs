@@ -1,5 +1,6 @@
 ﻿using ApplePodcastTranscription.Models;
 using ApplePodcastTranscription.Services;
+using ApplePodcastTranscription.Services.Session;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ApplePodcastTranscription.Controllers

@@ -3,7 +3,7 @@ using ApplePodcastTranscription.Models.DbTables;
 using ApplePodcastTranscription.Models.Exception;
 using ApplePodcastTranscription.Services.Database;
 
-namespace ApplePodcastTranscription.Services
+namespace ApplePodcastTranscription.Services.Session
 {
     public class LocalTranscriptQueue : ITranscriptQueue
     {
