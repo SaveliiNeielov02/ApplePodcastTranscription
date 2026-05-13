@@ -15,10 +15,10 @@ namespace ApplePodcastTranscription.Services
         private const string AudioFormat = "wave";
         
         private readonly IHttpClientFactory _httpClientFactory;
-        private readonly IPodcastFileIo _podcastFileIo;
+        private readonly IPodcastFileManager _podcastFileIo;
         private readonly string _appleBearerToken; // Need to be added as environment variable AppleBearerToken, can be obtained from Apple Podcasts web app network requests (must be periodically updated)
 
-        public DirectApplePodcastDownloader(IHttpClientFactory httpClientFactory, IConfiguration configuration, IPodcastFileIo podcastFileIo)
+        public DirectApplePodcastDownloader(IHttpClientFactory httpClientFactory, IConfiguration configuration, IPodcastFileManager podcastFileIo)
         {
             _httpClientFactory = httpClientFactory;
             _podcastFileIo = podcastFileIo;
@@ -41,8 +41,8 @@ namespace ApplePodcastTranscription.Services
 
                 await using var contentStream = await response.Content.ReadAsStreamAsync(downloadCt);
 
-                var filePath = _podcastFileIo.GetFilePath(fileName, AudioFormat);
-                await _podcastFileIo.WriteStreamAsync(filePath, contentStream);
+                var fullName = $"{fileName}.{AudioFormat}";
+                await _podcastFileIo.WriteStreamAsync(fullName, contentStream);
 
                 return new AudioPodcastDto
                 {
@@ -51,7 +51,7 @@ namespace ApplePodcastTranscription.Services
                     ArtistName = podcastData.ArtistName,
                     IconUrl = podcastData.IconUrl,
                     DownloadedAtInUnixTimeSeconds = downloadedTime,
-                    AudioFilePath = filePath
+                    StorageKey = fullName
                 };
             }
             catch (IOException ex) 

@@ -23,7 +23,7 @@ namespace ApplePodcastTranscriptionTest
             httpClientFactory.Setup(_ => _.CreateClient(It.IsAny<string>())).Returns(() => new HttpClient());
 
             // Mock file IO
-            var podcastFileIo = new LocalPodcastFileIo();
+            var podcastFileIo = new LocalPodcastFileManager();
 
             // Mock the configuration
             var builder = new ConfigurationBuilder().AddUserSecrets<Program>();
@@ -36,8 +36,8 @@ namespace ApplePodcastTranscriptionTest
             // Act
             var result = await applePodcastDownloader.DownloadPodcastEpisodeAsync(podcastId, podcastId, CancellationToken.None);
 
-            var audioFilePath = result.AudioFilePath;
-            var audioContent = podcastFileIo.ReadAsFileStream(audioFilePath);
+            var storageKey = result.StorageKey;
+            var audioContent = podcastFileIo.ReadAsFileStream(storageKey);
             var bytesRead = await audioContent.ReadAsync(buffer, 0, buffer.Length);
 
             // Assert
