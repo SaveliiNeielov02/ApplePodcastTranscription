@@ -2,7 +2,6 @@
 using ApplePodcastTranscription.Models.DbTables;
 using ApplePodcastTranscription.Models.Exception;
 using ApplePodcastTranscription.Models.PodcastDto;
-using ApplePodcastTranscription.Services.Database;
 
 namespace ApplePodcastTranscription.Services.Session
 {
@@ -15,14 +14,14 @@ namespace ApplePodcastTranscription.Services.Session
 
         private readonly ITranscriptQueue _transcriptQueue;
         private readonly IApplePodcastDownloader _podcastDownloader;
-        private readonly ILogger _logger;
+        private readonly ILogger<SessionWorker> _logger;
 
         public SessionWorker(
             ISessionRepository sessionRepository,
             IPodcastRecordRepository podcastRecordRepository,
             ITranscriptQueue transcriptQueue,
             IApplePodcastDownloader podcastDownloader,
-            ILogger logger)
+            ILogger<SessionWorker> logger)
         {
             _sessionRepository = sessionRepository;
             _podcastRecordRepository = podcastRecordRepository;

@@ -1,7 +1,7 @@
 ﻿using ApplePodcastTranscription.Interfaces;
 using ApplePodcastTranscription.Models.DbTables;
 using ApplePodcastTranscription.Models.Exception;
-using ApplePodcastTranscription.Services.Database;
+using ApplePodcastTranscription.Services.Transcript;
 
 namespace ApplePodcastTranscription.Services.Session
 {
@@ -13,11 +13,11 @@ namespace ApplePodcastTranscription.Services.Session
         private const int TranscriptTimeoutInMinutes = 15; // 15 minutes for the transcription process itself
 
         private readonly bool _isNeedToDeleteAudioFileAfterTranscription;
-        private readonly ILogger _logger;
+        private readonly ILogger<WhisperSmallTranscriber> _logger;
         private readonly SemaphoreSlim _queueSemaphore;
         private readonly IPodcastFileManager _podcastFileManager;
         private readonly IServiceScopeFactory _serviceScopeFactory;
-        public LocalTranscriptQueue(ILogger logger, IConfiguration configuration, IPodcastFileManager podcastFileManager, IServiceScopeFactory serviceScopeFactory) 
+        public LocalTranscriptQueue(ILogger<WhisperSmallTranscriber> logger, IConfiguration configuration, IPodcastFileManager podcastFileManager, IServiceScopeFactory serviceScopeFactory) 
         {
             _queueSemaphore = new SemaphoreSlim(1, SemaphoreThreshold);
             _logger = logger;

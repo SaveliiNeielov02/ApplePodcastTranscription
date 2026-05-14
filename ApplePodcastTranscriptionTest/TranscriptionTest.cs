@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Text;
+using Serilog.Core;
 using Whisper.net.Logger;
 using Xunit.Abstractions;
 
@@ -25,7 +26,7 @@ namespace ApplePodcastTranscriptionTest
             var configuration = builder.Build();
 
             var transcriber = new WhisperSmallTranscriber(loggerMock.Object, configuration, audioResampler);
-            var audioFilePath = Path.Combine("DownloadedPodcasts", "1000767418728.wave");
+            var audioFilePath = Path.Combine("DownloadedPodcasts", "1000767595273.wave");
 
             await using var audioStream = new FileStream(audioFilePath, FileMode.Open, FileAccess.Read);
             // Act

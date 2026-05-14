@@ -1,14 +1,7 @@
 ﻿using ApplePodcastTranscription.Interfaces;
-using ApplePodcastTranscription.Models;
 using ApplePodcastTranscription.Models.Exception;
-using NAudio.Wave;
-using NAudio.Wave.SampleProviders;
-using System.Collections.ObjectModel;
 using System.Text;
 using Whisper.net;
-using Whisper.net.Ggml;
-using Whisper.net.Logger;
-
 
 namespace ApplePodcastTranscription.Services.Transcript
 {
@@ -18,12 +11,12 @@ namespace ApplePodcastTranscription.Services.Transcript
         private readonly WhisperProcessor _processor;
 
         private readonly string _outputWaveFileFolder = Path.Combine(Directory.GetCurrentDirectory(), "ResampledAudio");
-        private readonly WhisperSmallAudioResampler _audioResampler;
-        private readonly ILogger _logger;
+        private readonly IAudioResampler _audioResampler;
+        private readonly ILogger<WhisperSmallTranscriber> _logger;
 
         private readonly string _modelPath = Path.Combine("Resources", "STTModels", "WhisperSmall", "ggml-small.bin");
 
-        public WhisperSmallTranscriber(ILogger logger, IConfiguration configuration, WhisperSmallAudioResampler audioResampler) 
+        public WhisperSmallTranscriber(ILogger<WhisperSmallTranscriber> logger, IConfiguration configuration, IAudioResampler audioResampler) 
         {
             if (!File.Exists(_modelPath)) 
             {

@@ -10,15 +10,6 @@ namespace ApplePodcastTranscription.Services.Database
         public ApplePodcastDbContext(DbContextOptions<ApplePodcastDbContext> options) : base(options)
         {}
         public ApplePodcastDbContext()
-        {
-        }
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            if (!optionsBuilder.IsConfigured)
-            {
-                var dbPath = Path.Combine("Resources", "Database", "database.sqlite");
-                optionsBuilder.UseSqlite($"Data Source={dbPath}");
-            }
-        }
+        { }
     }
 }

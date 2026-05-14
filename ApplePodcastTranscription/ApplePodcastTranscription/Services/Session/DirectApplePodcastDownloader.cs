@@ -2,8 +2,6 @@
 using ApplePodcastTranscription.Models.Exception;
 using ApplePodcastTranscription.Models.PodcastDto;
 using Newtonsoft.Json.Linq;
-using System.Collections.ObjectModel;
-using System.Runtime.InteropServices.JavaScript;
 
 namespace ApplePodcastTranscription.Services.Session
 {

@@ -1,7 +1,6 @@
 ﻿using ApplePodcastTranscription.Interfaces;
 using ApplePodcastTranscription.Models.DbTables;
 using ApplePodcastTranscription.Models.PodcastDto;
-using Microsoft.EntityFrameworkCore;
 
 namespace ApplePodcastTranscription.Services.Database
 {
