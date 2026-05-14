@@ -1,40 +1,51 @@
-﻿using ApplePodcastTranscription.Models;
-using ApplePodcastTranscription.Services;
-using ApplePodcastTranscription.Services.Session;
+﻿using ApplePodcastTranscription.Interfaces;
+using ApplePodcastTranscription.Models;
+using ApplePodcastTranscription.Models.DbTables;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Routing;
 
 namespace ApplePodcastTranscription.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
-    public class TranscriptController : Microsoft.AspNetCore.Mvc.ControllerBase
+    [Route("api/[controller]")]
+    public class TranscriptController : ControllerBase
     {
-        private readonly IServiceScopeFactory _serviceScopeFactory;
-        private readonly PodcastUrlParser _urlParser;
-        public TranscriptController(PodcastUrlParser urlParser, IServiceScopeFactory serviceProvider) 
+        private readonly ISessionRepository _sessionRepository;
+        public TranscriptController(ISessionRepository sessionRepository)
         {
-            _urlParser = urlParser;
-            _serviceScopeFactory = serviceProvider;
+            _sessionRepository = sessionRepository;
         }
-        [HttpPost("initializeSession")]
-        public IActionResult InitializeSession([FromBody] InitializeSessionRequest request)
+        [HttpGet("sessions")]
+        public async Task<IActionResult> GetAllSessions()
         {
-            try
+            var sessions = (await _sessionRepository.GetAllSessionsAsync()).ToList();
+
+            var response = sessions.Select(s => new SessionDto
             {
-                string podcastExternalId = _urlParser.GetPodcastExternalId(request.PodcastUrl);
-                Task.Run(async () => 
-                {
-                    // Creating new scope to avoid potential issues with scoped services in the background task
-                    using var scope = _serviceScopeFactory.CreateScope();
-                    var sessionWorker = scope.ServiceProvider.GetRequiredService<SessionWorker>();
-                    await sessionWorker.StartTransriptPipeline(podcastExternalId);
-                });
-                return Ok();
-            }
-            catch (Exception)
+                Guid = s.Guid,
+                TranscriptionStatus = s.TranscriptionStatus.ToString(),
+                PodcastTitle = s.PodcastRecord.Title,
+                PodcastArtist = s.PodcastRecord.ArtistName,
+                IconUrl = s.PodcastRecord.IconUrl,
+                DownloadedAtInUnixTimeSeconds = s.PodcastRecord.DownloadedAtInUnixTimeSeconds,
+                TranscribedAtInUnixTimeSeconds = s.PodcastRecord.TranscribedAtInUnixTimeSeconds
+            });
+
+            return Ok(response);
+        }
+
+        [HttpGet("transcript/{sessionGuid}")]
+        public async Task<IActionResult> GetTranscript(Guid sessionGuid)
+        {
+            var session = await _sessionRepository.GetSessionAsync(sessionGuid);
+
+            if (session == null)
             {
-                return BadRequest();
+                return NotFound(new { message = "Session not found" });
             }
+
+            return Ok(new {Text = session.PodcastRecord.TranscriptionText});
         }
     }
 }
+

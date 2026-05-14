@@ -1,6 +1,6 @@
 ﻿namespace ApplePodcastTranscription.Models
 {
-    public class InitializeSessionRequest
+    public class InitializeSession
     {
         public required string PodcastUrl { get; set; }
     }
