@@ -3,6 +3,7 @@ using ApplePodcastTranscription.Models;
 using ApplePodcastTranscription.Models.DbTables;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Routing;
+using PodcastModelsLibrary;
 
 namespace ApplePodcastTranscription.Controllers
 {
@@ -27,6 +28,7 @@ namespace ApplePodcastTranscription.Controllers
                 PodcastTitle = s.PodcastRecord.Title,
                 PodcastArtist = s.PodcastRecord.ArtistName,
                 IconUrl = s.PodcastRecord.IconUrl,
+                SessionCreatedAtInUnixTimeSeconds = s.CreatedAtInUnixTimeSeconds,
                 DownloadedAtInUnixTimeSeconds = s.PodcastRecord.DownloadedAtInUnixTimeSeconds,
                 TranscribedAtInUnixTimeSeconds = s.PodcastRecord.TranscribedAtInUnixTimeSeconds
             });

@@ -29,7 +29,7 @@ namespace ApplePodcastTranscription.Services.Session
             _podcastDownloader = podcastDownloader;
             _logger = logger;
         }
-        public async Task StartTransriptPipeline(string externalPodcastId) 
+        public async Task StartTranscriptPipeline(string externalPodcastId)
         {
             try
             {
@@ -43,9 +43,9 @@ namespace ApplePodcastTranscription.Services.Session
                 // New task creating to prevent long-running SessionWorker and to dispose scoped services
                 _ = Task.Run(async () => await _transcriptQueue.EnqueueSessionAsync(session.Guid, audioPodcastDto.StorageKey));
             }
-            catch (Exception ex) 
+            catch (Exception ex)
             {
-                _logger.LogError(ex, "Unhandled out-pipeline exception for podcast Id: {PodcastId}", externalPodcastId);
+                _logger.LogError(ex, "Pipeline exception for podcast Id: {PodcastId}", externalPodcastId);
             }
 
         }
@@ -53,19 +53,19 @@ namespace ApplePodcastTranscription.Services.Session
         {
             try
             {
-                var podcastRecord = new PodcastRecord
-                {
-                    ExternalId = externalPodcastId
-                };
+                var podcastRecordWithSameId = await _podcastRecordRepository.GetPodcastRecordByExternalId(externalPodcastId);
+                var podcastRecordToAdd = podcastRecordWithSameId ?? new PodcastRecord { ExternalId = externalPodcastId };
+
                 var session = new TranscriptSession
                 {
                     Guid = Guid.NewGuid(),
                     PodcastRecordId = externalPodcastId,
-                    PodcastRecord = podcastRecord,
+                    PodcastRecord = podcastRecordToAdd,
                     TranscriptionStatus = SessionStatus.Pending,
-                    TranscriptionError = SessionError.None
+                    TranscriptionError = SessionError.None,
+                    CreatedAtInUnixTimeSeconds = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
                 };
-
+                
                 await _sessionRepository.AddSessionAsync(session);
                 return session;
             }
@@ -75,12 +75,14 @@ namespace ApplePodcastTranscription.Services.Session
                 throw;
             }
         }
-        private async Task<AudioPodcastDto> DownloadPodcastAsync(TranscriptSession session) 
+        private async Task<AudioPodcastDto> DownloadPodcastAsync(TranscriptSession session)
         {
             var externalId = session.PodcastRecord.ExternalId;
 
             try
             {
+                _logger.LogInformation("Starting download for podcast episode Id: {PodcastId}", externalId);
+
                 using var downloadCts = new CancellationTokenSource(TimeSpan.FromMinutes(DownloadTimeoutInMinutes));
                 var podcastDto = await _podcastDownloader.DownloadPodcastEpisodeAsync(externalId, session.Guid.ToString(), downloadCts.Token);
 
@@ -103,7 +105,7 @@ namespace ApplePodcastTranscription.Services.Session
                 await _sessionRepository.UpdateSessionStatusAsync(session, SessionStatus.Failed);
                 throw;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "An unexpected error occurred while downloading podcast episode for Id: {PodcastId}", externalId);
                 await _sessionRepository.UpdateSessionErrorAsync(session, SessionError.UnknownError);

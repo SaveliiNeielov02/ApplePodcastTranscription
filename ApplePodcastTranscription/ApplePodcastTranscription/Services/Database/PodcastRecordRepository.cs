@@ -1,6 +1,7 @@
 ﻿using ApplePodcastTranscription.Interfaces;
 using ApplePodcastTranscription.Models.DbTables;
 using ApplePodcastTranscription.Models.PodcastDto;
+using Microsoft.EntityFrameworkCore;
 
 namespace ApplePodcastTranscription.Services.Database
 {
@@ -27,6 +28,10 @@ namespace ApplePodcastTranscription.Services.Database
             entity.Title = podcastDtoBase.Title;
 
             await _context.SaveChangesAsync();
+        }
+        public async Task<PodcastRecord?> GetPodcastRecordByExternalId(string externalId)
+        {
+            return await _context.PodcastsRecords.FirstOrDefaultAsync(p => p.ExternalId == externalId);
         }
     }
 }

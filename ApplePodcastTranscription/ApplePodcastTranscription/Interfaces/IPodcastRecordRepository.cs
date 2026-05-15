@@ -8,5 +8,6 @@ namespace ApplePodcastTranscription.Interfaces
     {
         public Task AddPodcastTranscriptionAsync(PodcastRecord entity, string podcastTranscription, long transcribedAtInUnixTimeSeconds);
         public Task UpdatePodcastRecordAsync(PodcastRecord entity, PodcastDtoBase podcastDtoBase);
+        public Task<PodcastRecord?> GetPodcastRecordByExternalId(string externalId);
     }
 }

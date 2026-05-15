@@ -1,7 +1,7 @@
-﻿using ApplePodcastTranscription.Models;
-using ApplePodcastTranscription.Services;
+﻿using ApplePodcastTranscription.Services;
 using ApplePodcastTranscription.Services.Session;
 using Microsoft.AspNetCore.Mvc;
+using PodcastModelsLibrary;
 
 namespace ApplePodcastTranscription.Controllers
 {
@@ -27,7 +27,7 @@ namespace ApplePodcastTranscription.Controllers
                     // Creating new scope to avoid potential issues with scoped services in the background task
                     using var scope = _serviceScopeFactory.CreateScope();
                     var sessionWorker = scope.ServiceProvider.GetRequiredService<SessionWorker>();
-                    await sessionWorker.StartTransriptPipeline(podcastExternalId);
+                    await sessionWorker.StartTranscriptPipeline(podcastExternalId);
                 });
                 return Ok();
             }

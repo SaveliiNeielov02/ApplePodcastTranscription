@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\PodcastModelsLibrary\PodcastModelsLibrary.csproj" />
     <ProjectReference Include="..\ApplePodcastTranscription.Client\ApplePodcastTranscription.Client.csproj" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="10.0.6" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.7">

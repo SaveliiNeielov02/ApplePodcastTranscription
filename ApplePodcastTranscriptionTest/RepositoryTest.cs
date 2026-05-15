@@ -23,7 +23,7 @@ namespace ApplePodcastTranscriptionTest
                 options.UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString()));
             services.AddScoped<ISessionRepository, PodcastSessionRepository>();
 
-            using var serviceProvider = services.BuildServiceProvider();
+            await using var serviceProvider = services.BuildServiceProvider();
             var testPodcastObject = new PodcastRecord() { ExternalId = "test_podcast_external_id" };
             var testSessionObject = new TranscriptSession()
             {
@@ -31,7 +31,8 @@ namespace ApplePodcastTranscriptionTest
                 PodcastRecordId = testPodcastObject.ExternalId,
                 PodcastRecord = testPodcastObject,
                 TranscriptionStatus = SessionStatus.Pending,
-                TranscriptionError = SessionError.None
+                TranscriptionError = SessionError.None,
+                CreatedAtInUnixTimeSeconds = 0
             };
             var repository = serviceProvider.GetRequiredService<ISessionRepository>();
 

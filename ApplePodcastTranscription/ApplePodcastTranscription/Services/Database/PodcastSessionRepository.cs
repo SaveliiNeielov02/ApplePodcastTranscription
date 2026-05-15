@@ -21,12 +21,12 @@ namespace ApplePodcastTranscription.Services.Database
 
         public async Task<IEnumerable<TranscriptSession>> GetAllSessionsAsync()
         {
-            throw new NotImplementedException();
+            return await _context.TranscriptSessions.Include(s => s.PodcastRecord).ToListAsync();
         }
 
         public async Task<TranscriptSession?> GetSessionAsync(Guid sessionGuid)
         {
-            return await _context.TranscriptSessions.FirstOrDefaultAsync(s => s.Guid == sessionGuid);
+            return await _context.TranscriptSessions.Include(s => s.PodcastRecord).FirstOrDefaultAsync(s => s.Guid == sessionGuid);
         }
 
         public async Task UpdateSessionErrorAsync(TranscriptSession entity, SessionError error)

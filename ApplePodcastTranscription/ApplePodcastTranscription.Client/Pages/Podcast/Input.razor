@@ -1,0 +1,21 @@
+﻿
+<div class="d-flex gap-2 mb-4">
+    <input type="url" class="form-control" placeholder="Place the link to the Apple Podcast you want to transcribe" @bind="PodcastUrl" />
+    <button class="btn btn-primary text-nowrap" @onclick="HandleSubmit">Start transcript</button>
+</div>
+
+@code {
+    private string PodcastUrl { get; set; } = string.Empty;
+
+    [Parameter]
+    public EventCallback<string> OnStartTranscript { get; set; }
+
+    private async Task HandleSubmit()
+    {
+        if (!string.IsNullOrWhiteSpace(PodcastUrl))
+        {
+            await OnStartTranscript.InvokeAsync(PodcastUrl);
+            PodcastUrl = string.Empty;
+        }
+    }
+}

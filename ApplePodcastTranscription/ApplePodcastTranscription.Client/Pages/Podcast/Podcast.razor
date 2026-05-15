@@ -1,0 +1,79 @@
+﻿@page "/podcast"
+@rendermode InteractiveWebAssembly
+@inject HttpClient Http
+@implements IDisposable
+
+<div>
+    <h3>Podcast link input</h3>
+    <Input OnStartTranscript="HandleTranscriptionStart"/>
+
+    <h3>Sessions table</h3>
+    <Table Sessions="Sessions"></Table>
+</div>
+
+@code {
+    public List<SessionDto> Sessions { get; set; } = [];
+
+    private PeriodicTimer? _timer;
+    private CancellationTokenSource _cts = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetAllSessions();
+        _ = StartPolling();
+    }
+
+    private async Task HandleTranscriptionStart(string url)
+    {
+        Console.WriteLine("Sending URL to server");
+        try
+        {
+            var response = await Http.PostAsJsonAsync("api/session/initialize", new InitializeSession { PodcastUrl = url });
+            response.EnsureSuccessStatusCode();
+            await GetAllSessions();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error occurred while initializing session: {ex.Message}");
+        }
+    }
+
+    private async Task GetAllSessions()
+    {
+        try
+        {
+            var response = await Http.GetFromJsonAsync<List<SessionDto>>("api/transcript/sessions");
+            if (response != null)
+            {
+                Sessions = response;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching sessions: {ex.Message}");
+        }
+    }
+
+    private async Task StartPolling()
+    {
+        _timer = new PeriodicTimer(TimeSpan.FromSeconds(15));
+
+        try
+        {
+            while (await _timer.WaitForNextTickAsync(_cts.Token))
+            {
+                await GetAllSessions();
+                StateHasChanged();
+            }
+        }
+        catch (OperationCanceledException)
+        { }
+    }
+
+    public void Dispose()
+    {
+        _cts.Cancel(); 
+        _cts.Dispose();
+        _timer?.Dispose();
+    }
+}

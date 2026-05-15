@@ -29,6 +29,14 @@ namespace ApplePodcastTranscription
             services.AddTransient<SessionWorker>();
 
             services.AddHttpClient();
+            services.AddScoped(sp =>
+            {
+                var navigationManager = sp.GetRequiredService<Microsoft.AspNetCore.Components.NavigationManager>();
+                return new HttpClient
+                {
+                    BaseAddress = new Uri(navigationManager.BaseUri)
+                };
+            });
             services.AddTransient<PodcastUrlParser>();
             return services;
         }

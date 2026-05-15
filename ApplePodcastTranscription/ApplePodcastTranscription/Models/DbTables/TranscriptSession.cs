@@ -11,6 +11,7 @@ namespace ApplePodcastTranscription.Models.DbTables
         public required PodcastRecord PodcastRecord { get; set; }
         public required SessionStatus TranscriptionStatus { get; set; }
         public required SessionError TranscriptionError { get; set; }
+        public required long CreatedAtInUnixTimeSeconds { get; set; }
     }
     public enum SessionStatus
     {

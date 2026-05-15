@@ -51,6 +51,9 @@ namespace ApplePodcastTranscription.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
+                    b.Property<long>("CreatedAtInUnixTimeSeconds")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("PodcastRecordId")
                         .IsRequired()
                         .HasColumnType("TEXT");
