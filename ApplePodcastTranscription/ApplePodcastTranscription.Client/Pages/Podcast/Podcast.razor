@@ -1,6 +1,7 @@
 ﻿@page "/podcast"
 @rendermode InteractiveWebAssembly
 @inject HttpClient Http
+@inject NavigationManager Navigation
 @implements IDisposable
 
 <div>
@@ -8,7 +9,7 @@
     <Input OnStartTranscript="HandleTranscriptionStart"/>
 
     <h3>Sessions table</h3>
-    <Table Sessions="Sessions"></Table>
+    <Table Sessions="Sessions" OnTranscriptViewClicked="HandleTranscriptViewClicked"></Table>
 </div>
 
 @code {
@@ -37,7 +38,10 @@
             Console.WriteLine($"Error occurred while initializing session: {ex.Message}");
         }
     }
-
+    private void HandleTranscriptViewClicked(Guid sessionGuid)
+    {
+        Navigation.NavigateTo($"/transcript/{sessionGuid}");
+    }
     private async Task GetAllSessions()
     {
         try
@@ -56,7 +60,7 @@
 
     private async Task StartPolling()
     {
-        _timer = new PeriodicTimer(TimeSpan.FromSeconds(15));
+        _timer = new PeriodicTimer(TimeSpan.FromSeconds(5));
 
         try
         {

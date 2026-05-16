@@ -20,7 +20,8 @@
                 <td>
                     @if (session.TranscriptionStatus == "Completed")
                     { 
-                        <button class="btn btn-sm btn-outline-primary">View</button>   
+                        <button class="btn btn-sm btn-outline-primary" 
+                                @onclick="() => OnTranscriptViewClicked.InvokeAsync(session.Guid)">View transcript</button>   
                     }
 
                 </td>
@@ -33,5 +34,8 @@
 @code {
     [Parameter]
     public List<SessionDto> Sessions { get; set; } = [];
+
+    [Parameter]
+    public EventCallback<Guid> OnTranscriptViewClicked { get; set; }
 
 }

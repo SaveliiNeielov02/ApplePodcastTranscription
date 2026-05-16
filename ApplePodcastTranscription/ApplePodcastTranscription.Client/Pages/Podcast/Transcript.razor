@@ -1,6 +1,144 @@
-﻿
-<h3>Transcript</h3>
+﻿@page "/transcript/{SessionGuid:guid}"
+@rendermode InteractiveWebAssembly
+@inject NavigationManager Navigation
+@inject HttpClient Http
+@inject IJSRuntime JS 
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Podcasts transcript</h2>
+        
+        <button class="btn btn-outline-secondary" @onclick="GoBack">
+            <i class="bi bi-arrow-left"></i> Back to table
+        </button>
+    </div>
+
+    @if (_isLoading)
+    {
+        <div class="text-center my-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2 text-muted">Loading transcript...</p>
+        </div>
+    }
+    else if (_errorMessage != null)
+    {
+        <div class="alert alert-danger">@_errorMessage</div>
+    }
+    else
+    {
+        <div class="card shadow-sm mb-5">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center py-3">
+                <span class="text-muted fw-medium">Transcript Text</span>
+                
+                <button class="btn btn-sm btn-primary" @onclick="CopyTextToClipboard">
+                    @if (_isCopied)
+                    {
+                        <i class="bi bi-check-lg"></i> <span>Copied!</span>
+                    }
+                    else
+                    {
+                        <i class="bi bi-clipboard"></i> <span>Copy text</span>
+                    }
+                </button>
+            </div>
+            <div class="card-body p-4">
+                @if (_paragraphs.Count > 0)
+                {
+                    @foreach (var paragraph in _paragraphs)
+                    {
+                        <p class="card-text text-justify lh-base mb-3" style="font-size: 1.1rem; text-indent: 1.5rem;">
+                            @paragraph
+                        </p>
+                    }
+                }
+                else
+                {
+                    <p class="text-muted italic">Text is empty.</p>
+                }
+            </div>
+        </div>
+    }
+</div>
 
 @code {
+    [Parameter] public Guid SessionGuid { get; set; }
+
+    private string _transcriptText = string.Empty;
+    private List<string> _paragraphs = new();
+    private bool _isLoading = true;
+    private string? _errorMessage;
+    private bool _isCopied = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var response = await Http.GetFromJsonAsync<TranscriptResponse>($"api/transcript/{SessionGuid}");
+            _transcriptText = response?.Text ?? string.Empty;
+            PrepareParagraphs();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error loading data: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void PrepareParagraphs()
+    {
+        if (string.IsNullOrWhiteSpace(_transcriptText)) return;
+
+        if (_transcriptText.Contains('\n'))
+        {
+            _paragraphs = _transcriptText
+                .Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(p => p.Trim())
+                .ToList();
+        }
+        else
+        {
+            var sentences = _transcriptText.Split(new[] { ". ", "! ", "? " }, StringSplitOptions.None);
+            var currentParagraph = new System.Text.StringBuilder();
+            
+            for (int i = 0; i < sentences.Length; i++)
+            {
+                currentParagraph.Append(sentences[i]).Append(". ");
+                if ((i + 1) % 4 == 0 || i == sentences.Length - 1)
+                {
+                    _paragraphs.Add(currentParagraph.ToString().Trim());
+                    currentParagraph.Clear();
+                }
+            }
+        }
+    }
+
+    private async Task CopyTextToClipboard()
+    {
+        if (string.IsNullOrEmpty(_transcriptText)) return;
+
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", _transcriptText);
+            _isCopied = true;
+
+            _ = Task.Delay(2000).ContinueWith(_ => 
+            {
+                _isCopied = false;
+                InvokeAsync(StateHasChanged);
+            });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to copy text: {ex.Message}");
+        }
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo("/podcast");
+    }
 
 }

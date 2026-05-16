@@ -36,7 +36,7 @@ namespace ApplePodcastTranscription.Controllers
             return Ok(response);
         }
 
-        [HttpGet("transcript/{sessionGuid}")]
+        [HttpGet("{sessionGuid}")]
         public async Task<IActionResult> GetTranscript(Guid sessionGuid)
         {
             var session = await _sessionRepository.GetSessionAsync(sessionGuid);
@@ -46,7 +46,12 @@ namespace ApplePodcastTranscription.Controllers
                 return NotFound(new { message = "Session not found" });
             }
 
-            return Ok(new {Text = session.PodcastRecord.TranscriptionText});
+            return Ok(new TranscriptResponse
+            {
+                SessionGuid = session.Guid,
+                Text = session.PodcastRecord.TranscriptionText,
+                TranscribedAtInUnixTimeSeconds = session.PodcastRecord.TranscribedAtInUnixTimeSeconds
+            });
         }
     }
 }

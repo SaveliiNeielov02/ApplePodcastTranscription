@@ -1,7 +1,31 @@
 ﻿@page "/"
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Home - Podcast Transcriber</PageTitle>
 
-<h1>Hello, world!</h1>
+<div class="container px-4 py-5 my-4 text-center">
+    <h1 class="display-5 fw-bold text-body-emphasis mt-3">Podcast Transcription Service</h1>
+    <div class="col-lg-6 mx-auto">
+        <p class="lead mb-4 mt-3">
+            Transform any Apple Podcast episode into readable text using the power of local AI.
+            Simply paste the podcast link, and our Whisper-powered engine will download, process, and transcribe the audio in the background.
+        </p>
+    </div>
+</div>
 
-Welcome to your new app.
+<div class="container mt-2 mb-5">
+    <hr class="mb-5" />
+    <div class="row g-4 row-cols-1 row-cols-lg-3">
+        <div>
+            <h4 class="fw-bold mb-2">Direct Download</h4>
+            <p class="text-muted">Automatically fetches the audio file directly from Apple Podcasts servers using just the episode URL.</p>
+        </div>
+        <div>
+            <h4 class="fw-bold mb-2">AI-Powered</h4>
+            <p class="text-muted">Uses the Whisper neural network to ensure high accuracy text recognition and proper punctuation.</p>
+        </div>
+        <div>
+            <h4 class="fw-bold mb-2">Background Queue</h4>
+            <p class="text-muted">Add multiple episodes to the queue. Our background worker processes them sequentially while you track the status.</p>
+        </div>
+    </div>
+</div>
