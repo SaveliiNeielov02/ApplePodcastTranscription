@@ -14,23 +14,27 @@ namespace ApplePodcastTranscription.Services.Session
         
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IPodcastFileManager _podcastFileIo;
+        private readonly ILogger<DirectApplePodcastDownloader> _logger;
         private readonly string _appleBearerToken; // Need to be added as environment variable AppleBearerToken, can be obtained from Apple Podcasts web app network requests (must be periodically updated)
 
-        public DirectApplePodcastDownloader(IHttpClientFactory httpClientFactory, IConfiguration configuration, IPodcastFileManager podcastFileIo)
+        public DirectApplePodcastDownloader(IHttpClientFactory httpClientFactory,
+            IConfiguration configuration,
+            ILogger<DirectApplePodcastDownloader> logger,
+            IPodcastFileManager podcastFileIo)
         {
             _httpClientFactory = httpClientFactory;
             _podcastFileIo = podcastFileIo;
+            _logger = logger;
             _appleBearerToken = configuration.GetValue<string?>("AppleBearer") 
                 ?? throw new ArgumentNullException("No value for env. variable AppleBearerToken");
         }
 
-        public async Task<AudioPodcastDto> DownloadPodcastEpisodeAsync(string podcastId, string fileName, CancellationToken downloadCt)
+        public async Task<AudioPodcastDto> DownloadPodcastEpisodeAsync(AssetPodcastDto podcastData, string fileName, CancellationToken downloadCt)
         {
-            var podcastData = await GetPodcastData(podcastId);
-
-            using var client = _httpClientFactory.CreateClient();
+            using var client = _httpClientFactory.CreateClient("ApplePodcast");
             client.DefaultRequestHeaders.TryAddWithoutValidation("accept", $"audio/{AudioFormat};q=0.9,application/ogg;q=0.7,video/*;q=0.6,*/*;q=0.5");
 
+            var fullFileName = $"{fileName}.{AudioFormat}";
             try
             {
                 var response = await client.GetAsync(podcastData.AssetUrl, HttpCompletionOption.ResponseHeadersRead, downloadCt);
@@ -39,8 +43,7 @@ namespace ApplePodcastTranscription.Services.Session
 
                 await using var contentStream = await response.Content.ReadAsStreamAsync(downloadCt);
 
-                var fullName = $"{fileName}.{AudioFormat}";
-                await _podcastFileIo.WriteStreamAsync(fullName, contentStream);
+                await _podcastFileIo.WriteStreamAsync(fullFileName, contentStream);
 
                 return new AudioPodcastDto
                 {
@@ -49,27 +52,41 @@ namespace ApplePodcastTranscription.Services.Session
                     ArtistName = podcastData.ArtistName,
                     IconUrl = podcastData.IconUrl,
                     DownloadedAtInUnixTimeSeconds = downloadedTime,
-                    StorageKey = fullName
+                    StorageKey = fullFileName
                 };
             }
             catch (IOException ex) 
             {
+                DeleteFileAfterUnsuccessfulDownload(fullFileName);
                 throw new DownloadException("An error occurred while saving the podcast episode locally", ex);
             }
             catch (OperationCanceledException ex)
             {
+                DeleteFileAfterUnsuccessfulDownload(fullFileName);
                 throw new DownloadTimeoutException("Download timed out", ex);
             }
             catch (Exception ex)
             {
+                DeleteFileAfterUnsuccessfulDownload(fullFileName);
                 throw new DownloadException("An error occurred while downloading the podcast episode", ex);
             }
 
         }
-        private async Task<AssetPodcastDto> GetPodcastData(string podcastId) 
+        private void DeleteFileAfterUnsuccessfulDownload(string fileName)
+        {
+            try
+            {
+                _podcastFileIo.DeleteFile(fileName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while deleting the file after an unsuccessful download.");
+            }
+        }
+        public async Task<AssetPodcastDto> GetPodcastData(string podcastId) 
         {
             var url = ApplePodcastBaseUrl.Replace("%podcastId%", podcastId);
-            using var client = _httpClientFactory.CreateClient();
+            using var client = _httpClientFactory.CreateClient("ApplePodcast");
 
             client.DefaultRequestHeaders.TryAddWithoutValidation("authorization", _appleBearerToken);
             client.DefaultRequestHeaders.TryAddWithoutValidation("origin", $"https://podcasts.apple.com");
@@ -92,6 +109,7 @@ namespace ApplePodcastTranscription.Services.Session
         }
         private AssetPodcastDto GetPodcastData(JObject podcastJson) 
         {
+            // Can be extended
             return new AssetPodcastDto
             {
                 ExternalId = podcastJson.SelectToken("data[0].id")?.ToString() ?? throw new InvalidOperationException("External ID not found"),

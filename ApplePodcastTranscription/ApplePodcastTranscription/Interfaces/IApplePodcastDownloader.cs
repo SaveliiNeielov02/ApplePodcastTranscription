@@ -4,6 +4,7 @@ namespace ApplePodcastTranscription.Interfaces
 {
     public interface IApplePodcastDownloader
     {
-        public Task<AudioPodcastDto> DownloadPodcastEpisodeAsync(string externalPodcastId, string fileName, CancellationToken cancellationToken);
+        public Task<AssetPodcastDto> GetPodcastData(string podcastId);
+        public Task<AudioPodcastDto> DownloadPodcastEpisodeAsync(AssetPodcastDto podcastData, string fileName, CancellationToken cancellationToken);
     }
 }

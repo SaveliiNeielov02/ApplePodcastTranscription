@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Serilog;
 using Serilog.Events;
 using Serilog.Sinks.SystemConsole.Themes;
+using System.Net;
 namespace ApplePodcastTranscription
 {
     public static class ServiceCollectionExtensions
@@ -28,7 +29,11 @@ namespace ApplePodcastTranscription
             services.AddSingleton<ITranscriptQueue, LocalTranscriptQueue>();
             services.AddTransient<SessionWorker>();
 
-            services.AddHttpClient();
+            services.AddHttpClient("ApplePodcast")
+                .ConfigurePrimaryHttpMessageHandler(_ => new HttpClientHandler
+                {
+                    AutomaticDecompression = DecompressionMethods.All
+                });
             services.AddScoped(sp =>
             {
                 var navigationManager = sp.GetRequiredService<Microsoft.AspNetCore.Components.NavigationManager>();

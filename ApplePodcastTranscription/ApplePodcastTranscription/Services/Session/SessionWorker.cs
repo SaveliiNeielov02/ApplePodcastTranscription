@@ -81,14 +81,19 @@ namespace ApplePodcastTranscription.Services.Session
 
             try
             {
+                _logger.LogInformation("Retrieving podcast data for Id: {PodcastId}", externalId);
+
+                var podcastData = await _podcastDownloader.GetPodcastData(externalId);
+
+                await _podcastRecordRepository.UpdatePodcastRecordAsync(session.PodcastRecord, podcastData);
+
                 _logger.LogInformation("Starting download for podcast episode Id: {PodcastId}", externalId);
 
                 using var downloadCts = new CancellationTokenSource(TimeSpan.FromMinutes(DownloadTimeoutInMinutes));
-                var podcastDto = await _podcastDownloader.DownloadPodcastEpisodeAsync(externalId, session.Guid.ToString(), downloadCts.Token);
+                var podcastDto = await _podcastDownloader.DownloadPodcastEpisodeAsync(podcastData, session.Guid.ToString(), downloadCts.Token);
 
                 _logger.LogInformation("Downloaded podcast episode for Id: {PodcastId}", externalId);
 
-                await _podcastRecordRepository.UpdatePodcastRecordAsync(session.PodcastRecord, podcastDto);
                 return podcastDto;
             }
             catch (DownloadTimeoutException ex)
