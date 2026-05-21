@@ -1,12 +1,15 @@
 ﻿using ApplePodcastTranscription.Models;
+using ApplePodcastTranscription.Services;
+using ApplePodcastTranscription.Services.Session;
+using ApplePodcastTranscription.Services.Transcript;
 using Castle.Core.Logging;
 using Microsoft.AspNetCore.Rewrite;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Moq;
 using System.Collections.ObjectModel;
+using System.Net;
 using System.Text;
-using ApplePodcastTranscription.Services;
-using ApplePodcastTranscription.Services.Session;
 
 namespace ApplePodcastTranscriptionTest
 {
@@ -21,10 +24,21 @@ namespace ApplePodcastTranscriptionTest
 
             // Mock the HttpClientFactory
             var httpClientFactory = new Mock<IHttpClientFactory>();
-            httpClientFactory.Setup(_ => _.CreateClient(It.IsAny<string>())).Returns(() => new HttpClient());
+            httpClientFactory.Setup(h => h.CreateClient("ApplePodcast")).Returns(() =>
+            {
+                var httpHandler = new HttpClientHandler
+                {
+                    AutomaticDecompression = DecompressionMethods.All
+                };
+                var httpClient = new HttpClient(httpHandler);
+                return httpClient;
+            });
 
             // Mock file IO
             var podcastFileIo = new LocalPodcastFileManager();
+
+            // Mock the logger
+            var loggerMock = new Mock<ILogger<DirectApplePodcastDownloader>>();
 
             // Mock the configuration
             var builder = new ConfigurationBuilder().AddUserSecrets<Program>();
@@ -32,10 +46,13 @@ namespace ApplePodcastTranscriptionTest
 
             var applePodcastDownloader = new DirectApplePodcastDownloader(
                 httpClientFactory.Object,
-               configuration, podcastFileIo);
+               configuration,
+               loggerMock.Object,
+                podcastFileIo);
 
             // Act
-            var result = await applePodcastDownloader.DownloadPodcastEpisodeAsync(podcastId, podcastId, CancellationToken.None);
+            var podcastData = await applePodcastDownloader.GetPodcastData(podcastId);
+            var result = await applePodcastDownloader.DownloadPodcastEpisodeAsync(podcastData, podcastId, CancellationToken.None);
 
             var storageKey = result.StorageKey;
             var audioContent = podcastFileIo.ReadAsFileStream(storageKey);

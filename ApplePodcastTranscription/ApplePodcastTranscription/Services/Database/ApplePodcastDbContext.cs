@@ -7,8 +7,11 @@ namespace ApplePodcastTranscription.Services.Database
     {
         public DbSet<TranscriptSession> TranscriptSessions { get; set; }
         public DbSet<PodcastRecord> PodcastsRecords { get; set; }
+
         public ApplePodcastDbContext(DbContextOptions<ApplePodcastDbContext> options) : base(options)
-        {}
+        {
+            Database.EnsureCreated();
+        }
         public ApplePodcastDbContext()
         { }
     }
