@@ -29,6 +29,8 @@ namespace ApplePodcastTranscription
             services.AddSingleton<ITranscriptQueue, LocalTranscriptQueue>();
             services.AddTransient<SessionWorker>();
 
+            services.AddSignalR();
+
             services.AddHttpClient("ApplePodcast")
                 .ConfigurePrimaryHttpMessageHandler(_ => new HttpClientHandler
                 {

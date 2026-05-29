@@ -58,7 +58,7 @@ namespace ApplePodcastTranscription.Services.Transcript
                         segment.Start, segment.End, segment.Text);
 
                     fullTextBuilder.Append(segment.Text).Append(' ');
-                    await SendNewState(sessionGuid.ToString(), segment.End, audioDuration);
+                    await UpdateSessionState(sessionGuid.ToString(), segment.End, audioDuration);
                 }
 
                 return fullTextBuilder.ToString().Trim();
@@ -76,7 +76,7 @@ namespace ApplePodcastTranscription.Services.Transcript
             }
         }
 
-        private async Task SendNewState(string sessionGuid, TimeSpan processedSegment, TimeSpan totalDuration)
+        private async Task UpdateSessionState(string sessionGuid, TimeSpan processedSegment, TimeSpan totalDuration)
         {
             try
             {

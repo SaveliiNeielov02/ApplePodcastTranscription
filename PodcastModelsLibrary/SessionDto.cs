@@ -3,7 +3,7 @@
     public class SessionDto
     {
         public Guid Guid { get; set; }
-        public string? TranscriptionStatus { get; set; }
+        public SessionStatus? TranscriptionStatus { get; set; }
         public string? PodcastTitle { get; set; }
         public string? PodcastArtist { get; set; }
         public string? IconUrl { get; set; }

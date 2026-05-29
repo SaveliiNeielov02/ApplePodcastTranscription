@@ -24,7 +24,7 @@ namespace ApplePodcastTranscription.Controllers
             var response = sessions.Select(s => new SessionDto
             {
                 Guid = s.Guid,
-                TranscriptionStatus = s.TranscriptionStatus.ToString(),
+                TranscriptionStatus = s.TranscriptionStatus,
                 PodcastTitle = s.PodcastRecord.Title,
                 PodcastArtist = s.PodcastRecord.ArtistName,
                 IconUrl = s.PodcastRecord.IconUrl,

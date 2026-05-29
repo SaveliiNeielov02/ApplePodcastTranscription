@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using PodcastModelsLibrary;
 
 namespace ApplePodcastTranscription.Models.DbTables
 {
@@ -12,14 +13,6 @@ namespace ApplePodcastTranscription.Models.DbTables
         public required SessionStatus TranscriptionStatus { get; set; }
         public required SessionError TranscriptionError { get; set; }
         public required long CreatedAtInUnixTimeSeconds { get; set; }
-    }
-    public enum SessionStatus
-    {
-        Pending,
-        InQueue,
-        InProgress,
-        Completed,
-        Failed
     }
     public enum SessionError
     {

@@ -1,5 +1,6 @@
 ﻿using ApplePodcastTranscription.Models;
 using ApplePodcastTranscription.Models.DbTables;
+using PodcastModelsLibrary;
 
 namespace ApplePodcastTranscription.Interfaces
 {

@@ -2,6 +2,7 @@
 using ApplePodcastTranscription.Models;
 using ApplePodcastTranscription.Models.DbTables;
 using Microsoft.EntityFrameworkCore;
+using PodcastModelsLibrary;
 
 namespace ApplePodcastTranscription.Services.Database
 {

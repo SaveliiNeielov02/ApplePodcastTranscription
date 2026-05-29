@@ -2,6 +2,7 @@
 using ApplePodcastTranscription.Models.DbTables;
 using ApplePodcastTranscription.Models.Exception;
 using ApplePodcastTranscription.Models.PodcastDto;
+using PodcastModelsLibrary;
 
 namespace ApplePodcastTranscription.Services.Session
 {

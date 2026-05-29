@@ -2,7 +2,7 @@
 @rendermode InteractiveWebAssembly
 @inject HttpClient Http
 @inject NavigationManager Navigation
-@implements IDisposable
+@implements IAsyncDisposable
 
 <div>
     <h3>Podcast link input</h3>
@@ -13,13 +13,37 @@
 </div>
 
 @code {
-    public List<SessionDto> Sessions { get; set; } = [];
-
+    public List<SessionDtoHub> Sessions { get; set; } = [];
+    private HubConnection? _hubConnection;
+    private readonly HashSet<Guid> _subscribedSessions = [];
     private PeriodicTimer? _timer;
     private CancellationTokenSource _cts = new();
 
     protected override async Task OnInitializedAsync()
     {
+        _hubConnection = new HubConnectionBuilder()
+            .WithUrl(Navigation.ToAbsoluteUri("/session-hub"))
+            .WithAutomaticReconnect()
+            .Build();
+
+        _hubConnection.On<Guid, int>("StateChanged", async (incomingGuid, progress) =>
+        {
+            var sessionToUpdate = Sessions.FirstOrDefault(s => s.Guid == incomingGuid);
+
+            if (progress >= 100)
+            {
+                await UnsubscribeFromSessionAsync(incomingGuid);
+            }
+
+            if (sessionToUpdate != null)
+            {
+                sessionToUpdate.TranslationPercentage = progress;
+                await InvokeAsync(StateHasChanged);
+            }
+        });
+
+        await _hubConnection.StartAsync();
+
         await GetAllSessions();
         _ = StartPolling();
     }
@@ -46,10 +70,20 @@
     {
         try
         {
-            var response = await Http.GetFromJsonAsync<List<SessionDto>>("api/transcript/sessions");
+            var response = await Http.GetFromJsonAsync<List<SessionDtoHub>>("api/transcript/sessions");
             if (response != null)
             {
+                foreach (var incomingSession in response)
+                {
+                    var existingSession = Sessions.FirstOrDefault(s => s.Guid == incomingSession.Guid);
+                    if (existingSession is { TranscriptionStatus: SessionStatus.InProgress })
+                    {
+                        incomingSession.TranslationPercentage = existingSession.TranslationPercentage;
+                    }
+                }
+
                 Sessions = response;
+                await SubscribeToActiveSessionsAsync();
             }
         }
         catch (Exception ex)
@@ -58,6 +92,33 @@
         }
     }
 
+    private async Task SubscribeToActiveSessionsAsync()
+    {
+        if (_hubConnection is null || _hubConnection.State != HubConnectionState.Connected)
+            return;
+
+        var activeSessions = Sessions.Where(s => s.TranscriptionStatus == SessionStatus.InProgress).ToList();
+
+        foreach (var session in activeSessions)
+        {
+            if (!_subscribedSessions.Contains(session.Guid))
+            {
+                await _hubConnection.SendAsync("SubscribeToSession", session.Guid);
+                _subscribedSessions.Add(session.Guid);
+            }
+        }
+    }
+    private async Task UnsubscribeFromSessionAsync(Guid sessionGuid)
+    {
+        if (_hubConnection is not null && _hubConnection.State == HubConnectionState.Connected)
+        {
+            if (_subscribedSessions.Contains(sessionGuid))
+            {
+                await _hubConnection.SendAsync("UnsubscribeFromSession", sessionGuid);
+                _subscribedSessions.Remove(sessionGuid);
+            }
+        }
+    }
     private async Task StartPolling()
     {
         _timer = new PeriodicTimer(TimeSpan.FromSeconds(5));
@@ -74,10 +135,19 @@
         { }
     }
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
-        _cts.Cancel(); 
+        await _cts.CancelAsync(); 
         _cts.Dispose();
         _timer?.Dispose();
+
+        if (_hubConnection is not null)
+        {
+            foreach (var sessionGuid in _subscribedSessions.ToList())
+            {
+                await UnsubscribeFromSessionAsync(sessionGuid);
+            }
+            await _hubConnection.DisposeAsync();
+        }
     }
 }

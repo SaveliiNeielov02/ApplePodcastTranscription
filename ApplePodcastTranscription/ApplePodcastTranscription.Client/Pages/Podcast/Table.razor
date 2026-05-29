@@ -1,41 +1,53 @@
 ﻿<div class="table-responsive">
     <table class="table table-striped table-hover align-middle">
         <thead class="table-light">
-        <tr>
-            <th>Title</th>
-            <th>Artist name</th>
-            <th>Created At</th>
-            <th>Status</th>
-            <th>Actions</th>
-        </tr>
+            <tr>
+                <th>Title</th>
+                <th>Artist name</th>
+                <th>Created At</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
         </thead>
         <tbody>
-        @foreach (var session in Sessions)
-        {
-            <tr>
-                <td>@(session.PodcastTitle ?? "Pending")</td>
-                <td>@(session.PodcastArtist ?? "Pending")</td>
-                <td>@DateTimeOffset.FromUnixTimeSeconds(session.SessionCreatedAtInUnixTimeSeconds).DateTime</td>
-                <td>@session.TranscriptionStatus</td>
-                <td>
-                    @if (session.TranscriptionStatus == "Completed")
-                    { 
-                        <button class="btn btn-sm btn-outline-primary" 
-                                @onclick="() => OnTranscriptViewClicked.InvokeAsync(session.Guid)">View transcript</button>   
-                    }
+            @foreach (var session in Sessions)
+            {
+                <tr>
+                    <td>@(session.PodcastTitle ?? "Pending")</td>
+                    <td>@(session.PodcastArtist ?? "Pending")</td>
+                    <td>@DateTimeOffset.FromUnixTimeSeconds(session.SessionCreatedAtInUnixTimeSeconds).DateTime</td>
+                    <td>@GetTranscriptionStatus(session)</td>
+                    <td>
+                        @if (session.TranscriptionStatus == SessionStatus.Completed)
+                        {
+                            <button class="btn btn-sm btn-outline-primary"
+                                    @onclick="() => OnTranscriptViewClicked.InvokeAsync(session.Guid)">
+                                View transcript
+                            </button>
+                        }
 
-                </td>
-            </tr>
-        }
+                    </td>
+                </tr>
+            }
         </tbody>
     </table>
 </div>
 
 @code {
     [Parameter]
-    public List<SessionDto> Sessions { get; set; } = [];
+    public List<SessionDtoHub> Sessions { get; set; } = [];
 
     [Parameter]
     public EventCallback<Guid> OnTranscriptViewClicked { get; set; }
+
+    private string GetTranscriptionStatus(SessionDtoHub session)
+    {
+        if (session.TranscriptionStatus == SessionStatus.InProgress)
+        {
+            return $"{session.TranscriptionStatus} ({session.TranslationPercentage}%)";
+        }
+
+        return session.TranscriptionStatus.ToString() ?? string.Empty;
+    }
 
 }

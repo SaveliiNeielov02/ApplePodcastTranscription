@@ -1,6 +1,7 @@
 using ApplePodcastTranscription;
 using ApplePodcastTranscription.Client.Pages;
 using ApplePodcastTranscription.Components;
+using ApplePodcastTranscription.Services.Hub;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,6 +35,8 @@ app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages:
 app.UseAntiforgery();
 
 app.MapControllers();
+
+app.MapHub<SessionHub>("/session-hub");
 
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
