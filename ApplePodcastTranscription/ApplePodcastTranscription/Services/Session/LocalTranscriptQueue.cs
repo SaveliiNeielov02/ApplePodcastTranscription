@@ -1,7 +1,9 @@
 ﻿using ApplePodcastTranscription.Interfaces;
 using ApplePodcastTranscription.Models.DbTables;
 using ApplePodcastTranscription.Models.Exception;
+using ApplePodcastTranscription.Models.Notification;
 using ApplePodcastTranscription.Services.Transcript;
+using MediatR;
 using PodcastModelsLibrary;
 
 namespace ApplePodcastTranscription.Services.Session
@@ -18,15 +20,22 @@ namespace ApplePodcastTranscription.Services.Session
         private readonly SemaphoreSlim _queueSemaphore;
         private readonly IPodcastFileManager _podcastFileManager;
         private readonly IServiceScopeFactory _serviceScopeFactory;
-        public LocalTranscriptQueue(ILogger<WhisperSmallTranscriber> logger, IConfiguration configuration, IPodcastFileManager podcastFileManager, IServiceScopeFactory serviceScopeFactory) 
+        private readonly IMediator _mediator;
+        public LocalTranscriptQueue(
+            ILogger<WhisperSmallTranscriber> logger,
+            IMediator mediator,
+            IConfiguration configuration,
+            IPodcastFileManager podcastFileManager,
+            IServiceScopeFactory serviceScopeFactory)
         {
             _queueSemaphore = new SemaphoreSlim(1, SemaphoreThreshold);
             _logger = logger;
+            _mediator = mediator;
             _isNeedToDeleteAudioFileAfterTranscription = configuration.GetValue<bool?>("DeleteAudioFileAfterTranscription") ?? true;
             _podcastFileManager = podcastFileManager;
             _serviceScopeFactory = serviceScopeFactory;
         }
-        public async Task EnqueueSessionAsync(Guid sessionGuid, string storageKey) 
+        public async Task EnqueueSessionAsync(Guid sessionGuid, string storageKey)
         {
             using var queueCts = new CancellationTokenSource(TimeSpan.FromMinutes(QueueTimeoutInMinutes));
             using var transcriptCts = new CancellationTokenSource(TimeSpan.FromMinutes(TranscriptTimeoutInMinutes));
@@ -43,19 +52,21 @@ namespace ApplePodcastTranscription.Services.Session
                 var transcriber = scope.ServiceProvider.GetRequiredService<ITranscriber>();
                 var podcastRepository = scope.ServiceProvider.GetRequiredService<IPodcastRecordRepository>();
                 var podcastSessionRepository = scope.ServiceProvider.GetRequiredService<ISessionRepository>();
-                var session = await podcastSessionRepository.GetSessionAsync(sessionGuid) 
+                var session = await podcastSessionRepository.GetSessionAsync(sessionGuid)
                     ?? throw new InvalidOperationException($"Session with GUID {sessionGuid} not found.");
 
                 _logger.LogInformation("Starting transcription for session {SessionGuid}", sessionGuid);
 
                 await podcastSessionRepository.UpdateSessionStatusAsync(session, SessionStatus.InProgress);
+                await _mediator.Publish(new UpdateSession(session.Guid.ToString()), CancellationToken.None);
 
                 await using var inputStream = _podcastFileManager.ReadAsFileStream(storageKey);
                 var transcription = await transcriber.TranscribeStreamAsync(sessionGuid, inputStream, transcriptCts.Token);
 
                 await podcastRepository.AddPodcastTranscriptionAsync(session.PodcastRecord, transcription, DateTimeOffset.UtcNow.ToUnixTimeSeconds());
-                
                 await podcastSessionRepository.UpdateSessionStatusAsync(session, SessionStatus.Completed);
+                await _mediator.Publish(new UpdateSession(session.Guid.ToString()), CancellationToken.None);
+
             }
             catch (TranscribingException ex)
             {
@@ -80,7 +91,7 @@ namespace ApplePodcastTranscription.Services.Session
                     _queueSemaphore.Release(); // Release the semaphore to allow the next transcription
                 }
 
-                if(_isNeedToDeleteAudioFileAfterTranscription)
+                if (_isNeedToDeleteAudioFileAfterTranscription)
                 {
                     DeleteAudioFile(_podcastFileManager, storageKey);
                 }
@@ -108,8 +119,12 @@ namespace ApplePodcastTranscription.Services.Session
                 var session = await sessionRepo.GetSessionAsync(sessionGuid);
                 if (session != null)
                 {
-                    if (error != SessionError.None) await sessionRepo.UpdateSessionErrorAsync(session, error);
+                    if (error != SessionError.None)
+                    {
+                        await sessionRepo.UpdateSessionErrorAsync(session, error);
+                    }
                     await sessionRepo.UpdateSessionStatusAsync(session, status);
+                    await _mediator.Publish(new UpdateSession(sessionGuid.ToString()), CancellationToken.None);
                 }
             }
             catch (Exception ex)

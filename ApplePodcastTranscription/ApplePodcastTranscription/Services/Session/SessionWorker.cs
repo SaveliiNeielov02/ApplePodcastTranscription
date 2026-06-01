@@ -1,7 +1,9 @@
 ﻿using ApplePodcastTranscription.Interfaces;
 using ApplePodcastTranscription.Models.DbTables;
 using ApplePodcastTranscription.Models.Exception;
+using ApplePodcastTranscription.Models.Notification;
 using ApplePodcastTranscription.Models.PodcastDto;
+using MediatR;
 using PodcastModelsLibrary;
 
 namespace ApplePodcastTranscription.Services.Session
@@ -16,9 +18,11 @@ namespace ApplePodcastTranscription.Services.Session
         private readonly ITranscriptQueue _transcriptQueue;
         private readonly IApplePodcastDownloader _podcastDownloader;
         private readonly ILogger<SessionWorker> _logger;
+        private readonly IMediator _mediator;
 
         public SessionWorker(
             ISessionRepository sessionRepository,
+            IMediator mediator,
             IPodcastRecordRepository podcastRecordRepository,
             ITranscriptQueue transcriptQueue,
             IApplePodcastDownloader podcastDownloader,
@@ -29,6 +33,7 @@ namespace ApplePodcastTranscription.Services.Session
             _transcriptQueue = transcriptQueue;
             _podcastDownloader = podcastDownloader;
             _logger = logger;
+            _mediator = mediator;
         }
         public async Task StartTranscriptPipeline(string externalPodcastId)
         {
@@ -40,6 +45,7 @@ namespace ApplePodcastTranscription.Services.Session
                 var audioPodcastDto = await DownloadPodcastAsync(session);
 
                 await _sessionRepository.UpdateSessionStatusAsync(session, SessionStatus.InQueue);
+                await _mediator.Publish(new UpdateSession(session.Guid.ToString()));
 
                 // New task creating to prevent long-running SessionWorker and to dispose scoped services
                 _ = Task.Run(async () => await _transcriptQueue.EnqueueSessionAsync(session.Guid, audioPodcastDto.StorageKey));
@@ -68,6 +74,8 @@ namespace ApplePodcastTranscription.Services.Session
                 };
                 
                 await _sessionRepository.AddSessionAsync(session);
+                await _mediator.Publish(new UpdateSession(session.Guid.ToString()));
+
                 return session;
             }
             catch (Exception ex)
@@ -87,6 +95,7 @@ namespace ApplePodcastTranscription.Services.Session
                 var podcastData = await _podcastDownloader.GetPodcastData(externalId);
 
                 await _podcastRecordRepository.UpdatePodcastRecordAsync(session.PodcastRecord, podcastData);
+                await _mediator.Publish(new UpdateSession(session.Guid.ToString()));
 
                 _logger.LogInformation("Starting download for podcast episode Id: {PodcastId}", externalId);
 
@@ -100,24 +109,27 @@ namespace ApplePodcastTranscription.Services.Session
             catch (DownloadTimeoutException ex)
             {
                 _logger.LogError(ex, "Download timed out for podcast episode Id: {PodcastId}", externalId);
-                await _sessionRepository.UpdateSessionErrorAsync(session, SessionError.DownloadTimeout);
-                await _sessionRepository.UpdateSessionStatusAsync(session, SessionStatus.Failed);
+                await HandleDownloadErrorAsync(session, SessionError.DownloadTimeout);
                 throw;
             }
             catch (DownloadException ex)
             {
                 _logger.LogError(ex, "Failed to download podcast episode for Id: {PodcastId}", externalId);
-                await _sessionRepository.UpdateSessionErrorAsync(session, SessionError.DownloadFailed);
-                await _sessionRepository.UpdateSessionStatusAsync(session, SessionStatus.Failed);
+                await HandleDownloadErrorAsync(session, SessionError.DownloadFailed);
                 throw;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "An unexpected error occurred while downloading podcast episode for Id: {PodcastId}", externalId);
-                await _sessionRepository.UpdateSessionErrorAsync(session, SessionError.UnknownError);
-                await _sessionRepository.UpdateSessionStatusAsync(session, SessionStatus.Failed);
+                await HandleDownloadErrorAsync(session, SessionError.UnknownError);
                 throw;
             }
+        }
+        private async Task HandleDownloadErrorAsync(TranscriptSession session, SessionError errorType)
+        {
+            await _sessionRepository.UpdateSessionErrorAsync(session, errorType);
+            await _sessionRepository.UpdateSessionStatusAsync(session, SessionStatus.Failed);
+            await _mediator.Publish(new UpdateSession(session.Guid.ToString()));
         }
     }
 }

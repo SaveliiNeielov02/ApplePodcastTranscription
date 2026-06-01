@@ -11,6 +11,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\PodcastModelsLibrary\PodcastModelsLibrary.csproj" />
     <ProjectReference Include="..\ApplePodcastTranscription.Client\ApplePodcastTranscription.Client.csproj" />
+    <PackageReference Include="MediatR" Version="14.1.0" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="10.0.6" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.7">
       <PrivateAssets>all</PrivateAssets>

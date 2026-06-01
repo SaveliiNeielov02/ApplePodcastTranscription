@@ -30,6 +30,9 @@ namespace ApplePodcastTranscription
             services.AddTransient<SessionWorker>();
 
             services.AddSignalR();
+            services.AddMediatR(cfg => {
+                cfg.RegisterServicesFromAssembly(typeof(Program).Assembly);
+            });
 
             services.AddHttpClient("ApplePodcast")
                 .ConfigurePrimaryHttpMessageHandler(_ => new HttpClientHandler

@@ -1,8 +1,10 @@
 ﻿using ApplePodcastTranscription.Interfaces;
 using ApplePodcastTranscription.Models.Exception;
 using ApplePodcastTranscription.Services.Hub;
+using MediatR;
 using Microsoft.AspNetCore.SignalR;
 using System.Text;
+using ApplePodcastTranscription.Models.Notification;
 using Whisper.net;
 
 namespace ApplePodcastTranscription.Services.Transcript
@@ -15,26 +17,26 @@ namespace ApplePodcastTranscription.Services.Transcript
         private readonly string _outputWaveFileFolder = Path.Combine(Directory.GetCurrentDirectory(), "ResampledAudio");
         private readonly IAudioResampler _audioResampler;
         private readonly ILogger<WhisperSmallTranscriber> _logger;
-        private readonly IHubContext<SessionHub> _hubContext;
+        private readonly IMediator _mediator;
 
         private readonly string _modelPath = Path.Combine("Resources", "STTModels", "WhisperSmall", "ggml-small.bin");
 
         public WhisperSmallTranscriber(ILogger<WhisperSmallTranscriber> logger,
-            IHubContext<SessionHub> hubContext,
+            IMediator mediator,
             IConfiguration configuration,
-            IAudioResampler audioResampler) 
+            IAudioResampler audioResampler)
         {
-            if (!File.Exists(_modelPath)) 
+            if (!File.Exists(_modelPath))
             {
                 throw new FileNotFoundException($"Model file not found at path: {_modelPath}");
             }
-            if (!Directory.Exists(_outputWaveFileFolder)) 
+            if (!Directory.Exists(_outputWaveFileFolder))
             {
                 Directory.CreateDirectory(_outputWaveFileFolder);
             }
             _logger = logger;
             _audioResampler = audioResampler;
-            _hubContext = hubContext;
+            _mediator = mediator;
 
             var useGpu = configuration.GetValue<bool?>("UseGpuForTranscription") ?? true;
             _factory = WhisperFactory.FromPath(_modelPath, new WhisperFactoryOptions { UseGpu = useGpu });
@@ -45,7 +47,7 @@ namespace ApplePodcastTranscription.Services.Transcript
         public async Task<string> TranscribeStreamAsync(Guid sessionGuid, Stream audioStream, CancellationToken ct)
         {
             var resampledFilePath = _audioResampler.CreateResampledFile(audioStream);
-            
+
             try
             {
                 var audioDuration = _audioResampler.GetAudioDuration(resampledFilePath);
@@ -58,7 +60,10 @@ namespace ApplePodcastTranscription.Services.Transcript
                         segment.Start, segment.End, segment.Text);
 
                     fullTextBuilder.Append(segment.Text).Append(' ');
-                    await UpdateSessionState(sessionGuid.ToString(), segment.End, audioDuration);
+
+                    await _mediator.Publish(
+                        new TranscriptProgressNotification(sessionGuid.ToString(), (int)(segment.End / audioDuration * 100)),
+                        CancellationToken.None);
                 }
 
                 return fullTextBuilder.ToString().Trim();
@@ -75,22 +80,6 @@ namespace ApplePodcastTranscription.Services.Transcript
                 }
             }
         }
-
-        private async Task UpdateSessionState(string sessionGuid, TimeSpan processedSegment, TimeSpan totalDuration)
-        {
-            try
-            {
-                var transcriptState = (int)(processedSegment / totalDuration * 100);
-
-                await _hubContext.Clients.Group(sessionGuid)
-                    .SendAsync("StateChanged", sessionGuid, transcriptState, CancellationToken.None);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to send transcription state update for session {SessionGuid}", sessionGuid);
-            }
-        }
-
         public void Dispose()
         {
             _processor?.Dispose();
