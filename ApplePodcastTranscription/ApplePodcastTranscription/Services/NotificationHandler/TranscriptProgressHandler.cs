@@ -16,7 +16,7 @@ namespace ApplePodcastTranscription.Services.NotificationHandler
 
         public async Task Handle(TranscriptProgressNotification request, CancellationToken cancellationToken)
         {
-            await _hubContext.Clients.Group(request.SessionGuid)
+            await _hubContext.Clients.Group(request.SessionGuid.ToString())
                 .SendAsync("ProgressChanged", request.SessionGuid, request.Progress, CancellationToken.None);
         }
     }

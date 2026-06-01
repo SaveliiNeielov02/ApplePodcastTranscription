@@ -2,5 +2,5 @@
 
 namespace ApplePodcastTranscription.Models.Notification
 {
-    public record TranscriptProgressNotification(string SessionGuid, int Progress) : INotification;
+    public record TranscriptProgressNotification(Guid SessionGuid, int Progress) : INotification;
 }

@@ -62,7 +62,7 @@ namespace ApplePodcastTranscription.Services.Transcript
                     fullTextBuilder.Append(segment.Text).Append(' ');
 
                     await _mediator.Publish(
-                        new TranscriptProgressNotification(sessionGuid.ToString(), (int)(segment.End / audioDuration * 100)),
+                        new TranscriptProgressNotification(sessionGuid, (int)(segment.End / audioDuration * 100)),
                         CancellationToken.None);
                 }
 
