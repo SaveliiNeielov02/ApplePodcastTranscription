@@ -6,7 +6,7 @@
 
 <div>
     <h3>Podcast link input</h3>
-    <Input OnStartTranscript="HandleTranscriptionStart"/>
+    <Input OnStartTranscript="HandleTranscriptionStart" />
 
     <h3>Sessions table</h3>
     <Table Sessions="Sessions" OnTranscriptViewClicked="HandleTranscriptViewClicked"></Table>
@@ -16,8 +16,6 @@
     public List<SessionDtoHub> Sessions { get; set; } = [];
     private HubConnection? _hubConnection;
     private readonly HashSet<Guid> _subscribedSessions = [];
-    private PeriodicTimer? _timer;
-    private CancellationTokenSource _cts = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -26,14 +24,9 @@
             .WithAutomaticReconnect()
             .Build();
 
-        _hubConnection.On<Guid, int>("StateChanged", async (incomingGuid, progress) =>
+        _hubConnection.On<Guid, int>("ProgressChanged", async (incomingGuid, progress) =>
         {
             var sessionToUpdate = Sessions.FirstOrDefault(s => s.Guid == incomingGuid);
-
-            if (progress >= 100)
-            {
-                await UnsubscribeFromSessionAsync(incomingGuid);
-            }
 
             if (sessionToUpdate != null)
             {
@@ -42,48 +35,25 @@
             }
         });
 
+        _hubConnection.On<Guid>("SessionChanged", async incomingGuid =>
+        {
+            await UpdateSession(incomingGuid);
+        });
+
         await _hubConnection.StartAsync();
 
-        await GetAllSessions();
-        _ = StartPolling();
+        await InitializeAllSessions();
     }
 
-    private async Task HandleTranscriptionStart(string url)
-    {
-        Console.WriteLine("Sending URL to server");
-        try
-        {
-            var response = await Http.PostAsJsonAsync("api/session/initialize", new InitializeSession { PodcastUrl = url });
-            response.EnsureSuccessStatusCode();
-            await GetAllSessions();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error occurred while initializing session: {ex.Message}");
-        }
-    }
-    private void HandleTranscriptViewClicked(Guid sessionGuid)
-    {
-        Navigation.NavigateTo($"/transcript/{sessionGuid}");
-    }
-    private async Task GetAllSessions()
+    private async Task InitializeAllSessions()
     {
         try
         {
-            var response = await Http.GetFromJsonAsync<List<SessionDtoHub>>("api/transcript/sessions");
+            var response = await Http.GetFromJsonAsync<List<SessionDtoHub>>("api/session/all");
             if (response != null)
             {
-                foreach (var incomingSession in response)
-                {
-                    var existingSession = Sessions.FirstOrDefault(s => s.Guid == incomingSession.Guid);
-                    if (existingSession is { TranscriptionStatus: SessionStatus.InProgress })
-                    {
-                        incomingSession.TranslationPercentage = existingSession.TranslationPercentage;
-                    }
-                }
-
                 Sessions = response;
-                await SubscribeToActiveSessionsAsync();
+                await SubscribeToSessionsAsync();
             }
         }
         catch (Exception ex)
@@ -91,15 +61,85 @@
             Console.WriteLine($"Error fetching sessions: {ex.Message}");
         }
     }
+    private async Task UpdateSession(Guid sessionGuid)
+    {
+        try
+        {
+            var response = await Http.GetFromJsonAsync<SessionDtoHub>($"api/session/{sessionGuid}");
 
-    private async Task SubscribeToActiveSessionsAsync()
+            if (response != null)
+            {
+                bool needsUnsubscribe = false;
+
+                await InvokeAsync(() =>
+                {
+                    var index = Sessions.FindIndex(s => s.Guid == response.Guid);
+
+                    if (index >= 0)
+                    {
+                        if (Sessions[index].TranscriptionStatus == SessionStatus.InProgress)
+                        {
+                            response.TranslationPercentage = Sessions[index].TranslationPercentage;
+                        }
+
+                        Sessions[index] = response;
+                    }
+
+                    if (response.TranscriptionStatus is SessionStatus.Completed or SessionStatus.Failed)
+                    {
+                        needsUnsubscribe = true;
+                    }
+
+                    StateHasChanged();
+                });
+
+                if (needsUnsubscribe)
+                {
+                    await UnsubscribeFromSessionAsync(response.Guid);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching session {sessionGuid}: {ex.Message}");
+        }
+    }
+
+    private async Task HandleTranscriptionStart(string url)
+    {
+        try
+        {
+            var response = await Http.PostAsJsonAsync("api/initializer/init", new InitializeSession { PodcastUrl = url });
+            response.EnsureSuccessStatusCode();
+
+            var sessionGuid = await response.Content.ReadFromJsonAsync<Guid>();
+
+            Sessions.Add(new SessionDtoHub { Guid = sessionGuid });
+            await _hubConnection!.SendAsync("SubscribeToSession", sessionGuid);
+            _subscribedSessions.Add(sessionGuid);
+
+            StateHasChanged();
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+        }
+    }
+    private void HandleTranscriptViewClicked(Guid sessionGuid)
+    {
+        Navigation.NavigateTo($"/transcript/{sessionGuid}");
+    }
+
+    private async Task SubscribeToSessionsAsync()
     {
         if (_hubConnection is null || _hubConnection.State != HubConnectionState.Connected)
             return;
 
-        var activeSessions = Sessions.Where(s => s.TranscriptionStatus == SessionStatus.InProgress).ToList();
-
-        foreach (var session in activeSessions)
+        var sessionsToSubscribeOn = Sessions
+                    .Where(s => s.TranscriptionStatus != SessionStatus.Completed
+                                && s.TranscriptionStatus != SessionStatus.Failed);
+        foreach (var session in sessionsToSubscribeOn)
         {
             if (!_subscribedSessions.Contains(session.Guid))
             {
@@ -119,28 +159,9 @@
             }
         }
     }
-    private async Task StartPolling()
-    {
-        _timer = new PeriodicTimer(TimeSpan.FromSeconds(5));
-
-        try
-        {
-            while (await _timer.WaitForNextTickAsync(_cts.Token))
-            {
-                await GetAllSessions();
-                StateHasChanged();
-            }
-        }
-        catch (OperationCanceledException)
-        { }
-    }
 
     public async ValueTask DisposeAsync()
     {
-        await _cts.CancelAsync(); 
-        _cts.Dispose();
-        _timer?.Dispose();
-
         if (_hubConnection is not null)
         {
             foreach (var sessionGuid in _subscribedSessions.ToList())

@@ -58,14 +58,14 @@ namespace ApplePodcastTranscription.Services.Session
                 _logger.LogInformation("Starting transcription for session {SessionGuid}", sessionGuid);
 
                 await podcastSessionRepository.UpdateSessionStatusAsync(session, SessionStatus.InProgress);
-                await _mediator.Publish(new UpdateSession(session.Guid.ToString()), CancellationToken.None);
+                await _mediator.Publish(new UpdateSession(session.Guid), CancellationToken.None);
 
                 await using var inputStream = _podcastFileManager.ReadAsFileStream(storageKey);
                 var transcription = await transcriber.TranscribeStreamAsync(sessionGuid, inputStream, transcriptCts.Token);
 
                 await podcastRepository.AddPodcastTranscriptionAsync(session.PodcastRecord, transcription, DateTimeOffset.UtcNow.ToUnixTimeSeconds());
                 await podcastSessionRepository.UpdateSessionStatusAsync(session, SessionStatus.Completed);
-                await _mediator.Publish(new UpdateSession(session.Guid.ToString()), CancellationToken.None);
+                await _mediator.Publish(new UpdateSession(session.Guid), CancellationToken.None);
 
             }
             catch (TranscribingException ex)
@@ -124,7 +124,7 @@ namespace ApplePodcastTranscription.Services.Session
                         await sessionRepo.UpdateSessionErrorAsync(session, error);
                     }
                     await sessionRepo.UpdateSessionStatusAsync(session, status);
-                    await _mediator.Publish(new UpdateSession(sessionGuid.ToString()), CancellationToken.None);
+                    await _mediator.Publish(new UpdateSession(sessionGuid), CancellationToken.None);
                 }
             }
             catch (Exception ex)

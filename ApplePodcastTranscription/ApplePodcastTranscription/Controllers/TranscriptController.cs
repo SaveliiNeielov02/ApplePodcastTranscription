@@ -16,26 +16,6 @@ namespace ApplePodcastTranscription.Controllers
         {
             _sessionRepository = sessionRepository;
         }
-        [HttpGet("sessions")]
-        public async Task<IActionResult> GetAllSessions()
-        {
-            var sessions = (await _sessionRepository.GetAllSessionsAsync()).ToList();
-
-            var response = sessions.Select(s => new SessionDto
-            {
-                Guid = s.Guid,
-                TranscriptionStatus = s.TranscriptionStatus,
-                PodcastTitle = s.PodcastRecord.Title,
-                PodcastArtist = s.PodcastRecord.ArtistName,
-                IconUrl = s.PodcastRecord.IconUrl,
-                SessionCreatedAtInUnixTimeSeconds = s.CreatedAtInUnixTimeSeconds,
-                DownloadedAtInUnixTimeSeconds = s.PodcastRecord.DownloadedAtInUnixTimeSeconds,
-                TranscribedAtInUnixTimeSeconds = s.PodcastRecord.TranscribedAtInUnixTimeSeconds
-            });
-
-            return Ok(response);
-        }
-
         [HttpGet("{sessionGuid}")]
         public async Task<IActionResult> GetTranscript(Guid sessionGuid)
         {

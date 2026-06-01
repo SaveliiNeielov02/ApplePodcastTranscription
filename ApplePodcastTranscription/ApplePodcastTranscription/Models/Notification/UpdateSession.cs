@@ -2,5 +2,5 @@
 
 namespace ApplePodcastTranscription.Models.Notification
 {
-    public record UpdateSession(string SessionGuid) : INotification;
+    public record UpdateSession(Guid SessionGuid) : INotification;
 }

@@ -35,17 +35,17 @@ namespace ApplePodcastTranscription.Services.Session
             _logger = logger;
             _mediator = mediator;
         }
-        public async Task StartTranscriptPipeline(string externalPodcastId)
+        public async Task StartTranscriptPipeline(Guid sessionGuid, string externalPodcastId)
         {
             try
             {
                 _logger.LogInformation("Starting to process podcast session for Id: {PodcastId}", externalPodcastId);
 
-                var session = await InitializeNewSession(externalPodcastId);
+                var session = await InitializeNewSession(sessionGuid, externalPodcastId);
                 var audioPodcastDto = await DownloadPodcastAsync(session);
 
                 await _sessionRepository.UpdateSessionStatusAsync(session, SessionStatus.InQueue);
-                await _mediator.Publish(new UpdateSession(session.Guid.ToString()));
+                await _mediator.Publish(new UpdateSession(session.Guid));
 
                 // New task creating to prevent long-running SessionWorker and to dispose scoped services
                 _ = Task.Run(async () => await _transcriptQueue.EnqueueSessionAsync(session.Guid, audioPodcastDto.StorageKey));
@@ -56,7 +56,7 @@ namespace ApplePodcastTranscription.Services.Session
             }
 
         }
-        private async Task<TranscriptSession> InitializeNewSession(string externalPodcastId)
+        private async Task<TranscriptSession> InitializeNewSession(Guid sessionGuid, string externalPodcastId)
         {
             try
             {
@@ -65,7 +65,7 @@ namespace ApplePodcastTranscription.Services.Session
 
                 var session = new TranscriptSession
                 {
-                    Guid = Guid.NewGuid(),
+                    Guid = sessionGuid,
                     PodcastRecordId = externalPodcastId,
                     PodcastRecord = podcastRecordToAdd,
                     TranscriptionStatus = SessionStatus.Pending,
@@ -74,7 +74,7 @@ namespace ApplePodcastTranscription.Services.Session
                 };
                 
                 await _sessionRepository.AddSessionAsync(session);
-                await _mediator.Publish(new UpdateSession(session.Guid.ToString()));
+                await _mediator.Publish(new UpdateSession(session.Guid));
 
                 return session;
             }
@@ -95,7 +95,7 @@ namespace ApplePodcastTranscription.Services.Session
                 var podcastData = await _podcastDownloader.GetPodcastData(externalId);
 
                 await _podcastRecordRepository.UpdatePodcastRecordAsync(session.PodcastRecord, podcastData);
-                await _mediator.Publish(new UpdateSession(session.Guid.ToString()));
+                await _mediator.Publish(new UpdateSession(session.Guid));
 
                 _logger.LogInformation("Starting download for podcast episode Id: {PodcastId}", externalId);
 
@@ -129,7 +129,7 @@ namespace ApplePodcastTranscription.Services.Session
         {
             await _sessionRepository.UpdateSessionErrorAsync(session, errorType);
             await _sessionRepository.UpdateSessionStatusAsync(session, SessionStatus.Failed);
-            await _mediator.Publish(new UpdateSession(session.Guid.ToString()));
+            await _mediator.Publish(new UpdateSession(session.Guid));
         }
     }
 }

@@ -1,5 +1,4 @@
-﻿using ApplePodcastTranscription.Services;
-using ApplePodcastTranscription.Services.Session;
+﻿using ApplePodcastTranscription.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using PodcastModelsLibrary;
 
@@ -9,32 +8,53 @@ namespace ApplePodcastTranscription.Controllers
     [Route("api/[controller]")]
     public class SessionController : ControllerBase
     {
-        private readonly IServiceScopeFactory _serviceScopeFactory;
-        private readonly PodcastUrlParser _urlParser;
-        public SessionController(PodcastUrlParser urlParser, IServiceScopeFactory serviceProvider) 
+        private readonly ISessionRepository _sessionRepository;
+        public SessionController(ISessionRepository sessionRepository)
         {
-            _urlParser = urlParser;
-            _serviceScopeFactory = serviceProvider;
+            _sessionRepository = sessionRepository;
         }
-        [HttpPost("initialize")]
-        public IActionResult Initialize([FromBody] InitializeSession request)
+        [HttpGet("all")]
+        public async Task<IActionResult> GetAllSessions()
         {
-            try
+            var sessions = (await _sessionRepository.GetAllSessionsAsync()).ToList();
+
+            var response = sessions.Select(s => new SessionDto
             {
-                string podcastExternalId = _urlParser.GetPodcastExternalId(request.PodcastUrl);
-                Task.Run(async () => 
-                {
-                    // Creating new scope to avoid potential issues with scoped services in the background task
-                    using var scope = _serviceScopeFactory.CreateScope();
-                    var sessionWorker = scope.ServiceProvider.GetRequiredService<SessionWorker>();
-                    await sessionWorker.StartTranscriptPipeline(podcastExternalId);
-                });
-                return Ok();
-            }
-            catch (Exception)
+                Guid = s.Guid,
+                TranscriptionStatus = s.TranscriptionStatus,
+                PodcastTitle = s.PodcastRecord.Title,
+                PodcastArtist = s.PodcastRecord.ArtistName,
+                IconUrl = s.PodcastRecord.IconUrl,
+                SessionCreatedAtInUnixTimeSeconds = s.CreatedAtInUnixTimeSeconds,
+                DownloadedAtInUnixTimeSeconds = s.PodcastRecord.DownloadedAtInUnixTimeSeconds,
+                TranscribedAtInUnixTimeSeconds = s.PodcastRecord.TranscribedAtInUnixTimeSeconds
+            });
+
+            return Ok(response);
+        }
+        [HttpGet("{sessionGuid}")]
+        public async Task<IActionResult> GetSession(Guid sessionGuid)
+        {
+            var session = await _sessionRepository.GetSessionAsync(sessionGuid);
+
+            if (session == null)
             {
-                return BadRequest();
+                return NotFound(new { message = "Session not found" });
             }
+
+            var response = new SessionDto
+            {
+                Guid = session.Guid,
+                TranscriptionStatus = session.TranscriptionStatus,
+                PodcastTitle = session.PodcastRecord.Title,
+                PodcastArtist = session.PodcastRecord.ArtistName,
+                IconUrl = session.PodcastRecord.IconUrl,
+                SessionCreatedAtInUnixTimeSeconds = session.CreatedAtInUnixTimeSeconds,
+                DownloadedAtInUnixTimeSeconds = session.PodcastRecord.DownloadedAtInUnixTimeSeconds,
+                TranscribedAtInUnixTimeSeconds = session.PodcastRecord.TranscribedAtInUnixTimeSeconds
+            };
+
+            return Ok(response);
         }
     }
 }

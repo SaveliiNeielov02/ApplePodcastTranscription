@@ -15,7 +15,7 @@ namespace ApplePodcastTranscription.Services.NotificationHandler
         }
         public async Task Handle(UpdateSession request, CancellationToken cancellationToken)
         {
-            await _hubContext.Clients.Group(request.SessionGuid)
+            await _hubContext.Clients.Group(request.SessionGuid.ToString())
                 .SendAsync("SessionChanged", request.SessionGuid, CancellationToken.None);
         }
     }
