@@ -26,7 +26,7 @@ namespace ApplePodcastTranscription.Services.Session
             _podcastFileIo = podcastFileIo;
             _logger = logger;
             _appleBearerToken = configuration.GetValue<string?>("AppleBearer") 
-                ?? throw new ArgumentNullException("No value for env. variable AppleBearerToken");
+                ?? throw new ArgumentNullException("No value for env. variable AppleBearer");
         }
 
         public async Task<AudioPodcastDto> DownloadPodcastEpisodeAsync(AssetPodcastDto podcastData, string fileName, CancellationToken downloadCt)

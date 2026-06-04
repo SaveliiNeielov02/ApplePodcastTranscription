@@ -1,18 +1,23 @@
 ﻿using ApplePodcastTranscription.Interfaces;
 using ApplePodcastTranscription.Models.Exception;
+using ApplePodcastTranscription.Models.Notification;
 using ApplePodcastTranscription.Services.Hub;
 using MediatR;
 using Microsoft.AspNetCore.SignalR;
 using System.Text;
-using ApplePodcastTranscription.Models.Notification;
 using Whisper.net;
+using Whisper.net.Ggml;
 
 namespace ApplePodcastTranscription.Services.Transcript
 {
     public class WhisperSmallTranscriber : ITranscriber, IDisposable
     {
-        private readonly WhisperFactory _factory;
-        private readonly WhisperProcessor _processor;
+        private bool _isModelInitialized = false;
+        private readonly bool _useGpu;
+        private readonly GgmlType _ggmlType = GgmlType.Small;
+
+        private WhisperFactory _factory;
+        private WhisperProcessor _processor;
 
         private readonly string _outputWaveFileFolder = Path.Combine(Directory.GetCurrentDirectory(), "ResampledAudio");
         private readonly IAudioResampler _audioResampler;
@@ -26,26 +31,47 @@ namespace ApplePodcastTranscription.Services.Transcript
             IConfiguration configuration,
             IAudioResampler audioResampler)
         {
+            _logger = logger;
+            _audioResampler = audioResampler;
+            _mediator = mediator;
+
+            _useGpu = configuration.GetValue<bool?>("UseGpuForTranscription") ?? true;
+        }
+
+        private async Task EnsureInitialized()
+        {
+            if(_isModelInitialized) return;
+
+            _logger.LogInformation("Initializing Whisper model...");
+            
+            var modelDir = Path.GetDirectoryName(_modelPath);
+            if (!Directory.Exists(modelDir))
+            {
+                Directory.CreateDirectory(modelDir!);
+            }
+
             if (!File.Exists(_modelPath))
             {
-                throw new FileNotFoundException($"Model file not found at path: {_modelPath}");
+                _logger.LogInformation("No model found at {modelPath}. Downloading...", _modelPath);
+
+                await DownloadModel(_modelPath, _ggmlType);
             }
             if (!Directory.Exists(_outputWaveFileFolder))
             {
                 Directory.CreateDirectory(_outputWaveFileFolder);
             }
-            _logger = logger;
-            _audioResampler = audioResampler;
-            _mediator = mediator;
 
-            var useGpu = configuration.GetValue<bool?>("UseGpuForTranscription") ?? true;
-            _factory = WhisperFactory.FromPath(_modelPath, new WhisperFactoryOptions { UseGpu = useGpu });
+            _factory = WhisperFactory.FromPath(_modelPath, new WhisperFactoryOptions { UseGpu = _useGpu });
             _processor = _factory.CreateBuilder()
                 .WithLanguageDetection()
                 .Build();
+
+            _isModelInitialized = true;
         }
+
         public async Task<string> TranscribeStreamAsync(Guid sessionGuid, Stream audioStream, CancellationToken ct)
         {
+            await EnsureInitialized();
             var resampledFilePath = _audioResampler.CreateResampledFile(audioStream);
 
             try
@@ -79,6 +105,12 @@ namespace ApplePodcastTranscription.Services.Transcript
                     File.Delete(resampledFilePath);
                 }
             }
+        }
+        private async Task DownloadModel(string fileName, GgmlType ggmlType)
+        {
+            await using var modelStream = await WhisperGgmlDownloader.Default.GetGgmlModelAsync(ggmlType);
+            await using var fileWriter = File.OpenWrite(fileName);
+            await modelStream.CopyToAsync(fileWriter);
         }
         public void Dispose()
         {
