@@ -1,5 +1,6 @@
 ﻿using ApplePodcastTranscription.Interfaces;
 using ApplePodcastTranscription.Services;
+using ApplePodcastTranscription.Services.Background;
 using ApplePodcastTranscription.Services.Database;
 using ApplePodcastTranscription.Services.Session;
 using ApplePodcastTranscription.Services.Transcript;
@@ -28,6 +29,8 @@ namespace ApplePodcastTranscription
             services.AddTransient<IPodcastFileManager, LocalPodcastFileManager>();
             services.AddSingleton<ITranscriptQueue, LocalTranscriptQueue>();
             services.AddTransient<SessionWorker>();
+
+            services.AddHostedService<TranscriptBackgroundWorker>();
 
             services.AddSignalR();
             services.AddMediatR(cfg => {

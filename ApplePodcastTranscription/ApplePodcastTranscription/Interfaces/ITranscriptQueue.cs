@@ -1,7 +1,10 @@
-﻿namespace ApplePodcastTranscription.Interfaces
+﻿using ApplePodcastTranscription.Models;
+
+namespace ApplePodcastTranscription.Interfaces
 {
     public interface ITranscriptQueue
     {
-        public Task EnqueueSessionAsync(Guid sessionGuid, string storageKey);
+        ValueTask EnqueueSessionAsync(Guid sessionGuid, string storageKey, CancellationToken ct = default);
+        ValueTask<TranscriptQueueItem> DequeueAsync(CancellationToken ct);
     }
 }

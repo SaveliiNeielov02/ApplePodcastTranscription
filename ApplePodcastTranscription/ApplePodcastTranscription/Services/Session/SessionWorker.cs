@@ -47,8 +47,7 @@ namespace ApplePodcastTranscription.Services.Session
                 await _sessionRepository.UpdateSessionStatusAsync(session, SessionStatus.InQueue);
                 await _mediator.Publish(new UpdateSession(session.Guid));
 
-                // New task creating to prevent long-running SessionWorker and to dispose scoped services
-                _ = Task.Run(async () => await _transcriptQueue.EnqueueSessionAsync(session.Guid, audioPodcastDto.StorageKey));
+                await _transcriptQueue.EnqueueSessionAsync(session.Guid, audioPodcastDto.StorageKey);
             }
             catch (Exception ex)
             {
