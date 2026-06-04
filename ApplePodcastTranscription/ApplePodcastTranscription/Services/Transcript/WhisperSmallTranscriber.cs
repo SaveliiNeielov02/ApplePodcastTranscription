@@ -19,7 +19,6 @@ namespace ApplePodcastTranscription.Services.Transcript
         private WhisperFactory _factory;
         private WhisperProcessor _processor;
 
-        private readonly string _outputWaveFileFolder = Path.Combine(Directory.GetCurrentDirectory(), "ResampledAudio");
         private readonly IAudioResampler _audioResampler;
         private readonly ILogger<WhisperSmallTranscriber> _logger;
         private readonly IMediator _mediator;
@@ -56,11 +55,7 @@ namespace ApplePodcastTranscription.Services.Transcript
 
                 await DownloadModel(_modelPath, _ggmlType);
             }
-            if (!Directory.Exists(_outputWaveFileFolder))
-            {
-                Directory.CreateDirectory(_outputWaveFileFolder);
-            }
-
+            
             _factory = WhisperFactory.FromPath(_modelPath, new WhisperFactoryOptions { UseGpu = _useGpu });
             _processor = _factory.CreateBuilder()
                 .WithLanguageDetection()
