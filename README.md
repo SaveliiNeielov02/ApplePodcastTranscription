@@ -35,9 +35,6 @@ A .NET 10 full-stack web application designed to automatically download podcasts
 
 * Apple Podcasts Bearer Token (required for Apple API authentication).
 
-* Whisper Model in GGML format (e.g., `ggml-small.bin`).
-
-
 
 ## Tech Stack
 
@@ -74,18 +71,6 @@ cd ApplePodcastTranscription
 dotnet user-secrets set "AppleBearer" "YOUR_REAL_BEARER_TOKEN"
 
 ```
-
-### 3. Add AI Model
-
-Create a `ApplePodcastTranscription/ApplePodcastTranscription/Resources/STTModels/WhisperSmall` directory in the project root and place your downloaded `ggml-small.bin` file inside.
-
-
-
-### 4. Add database file
-
-Create a `ApplePodcastTranscription/ApplePodcastTranscription/Resources/Database` directory in the project root and drop an empty file named `database.sqlite` inside it. Necessary tables will be generated automatically on the first run.
-
-
 
 ### 5. Finally, run the app!
 
