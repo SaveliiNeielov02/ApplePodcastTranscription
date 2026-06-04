@@ -363,3 +363,5 @@ MigrationBackup/
 FodyWeavers.xsd
 /ApplePodcastTranscription/ApplePodcastTranscription/Resources/STTModels/WhisperSmall
 /ApplePodcastTranscription/ApplePodcastTranscription/Resources/Database/database.sqlite
+/ApplePodcastTranscription/ApplePodcastTranscription/Resources/Database/database.sqlite-shm
+/ApplePodcastTranscription/ApplePodcastTranscription/Resources/Database/database.sqlite-wal
